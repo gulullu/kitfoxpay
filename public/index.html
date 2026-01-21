@@ -1,0 +1,1782 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>配置管理 - KitfoxPay</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .section-header {
+            background: #f5f5f5;
+            padding: 15px 20px;
+            font-weight: 600;
+            font-size: 16px;
+            color: #333;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .section-header .icon {
+            font-size: 20px;
+            margin-right: 10px;
+        }
+
+        .section-content {
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: 'Courier New', monospace;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .form-group textarea.large {
+            min-height: 100px;
+        }
+
+        .form-group .help-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .btn-danger {
+            background: #ff4757;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #ff3838;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        /* 选项卡样式 */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0 10px;
+        }
+        .tab-btn {
+            padding: 10px 16px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: #f5f5f5;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tab-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+        .tab-btn:hover {
+            transform: translateY(-1px);
+        }
+        .tab-pane {
+            display: none;
+        }
+        .tab-pane.active {
+            display: block;
+        }
+
+        .alert {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 20px;
+            border-radius: 6px;
+            display: none;
+            z-index: 10000;
+            min-width: 300px;
+            max-width: 90%;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            animation: slideDown 0.3s ease-out;
+        }
+
+        /* 登录对话框内的提示条使用相对定位 */
+        .login-overlay .alert {
+            position: relative;
+            top: auto;
+            left: auto;
+            transform: none;
+            margin-bottom: 15px;
+            z-index: auto;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .toggle-password {
+            cursor: pointer;
+            color: #667eea;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+
+        .toggle-password:hover {
+            text-decoration: underline;
+        }
+
+        .btn-small {
+            padding: 8px 12px;
+            font-size: 12px;
+        }
+
+        /* 登录对话框样式 */
+        .login-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-overlay.show {
+            display: flex;
+        }
+
+        .login-dialog {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .login-dialog h2 {
+            margin-bottom: 20px;
+            color: #333;
+            text-align: center;
+        }
+
+        .login-dialog .form-group {
+            margin-bottom: 20px;
+        }
+
+        .login-dialog .btn {
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <!-- 登录对话框 -->
+    <div id="loginOverlay" class="login-overlay">
+        <div class="login-dialog">
+            <h2>🔐 配置管理登录</h2>
+            <div id="loginAlert" class="alert" style="display: none;"></div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="loginPassword">管理密码</label>
+                    <input type="password" id="loginPassword" name="password" placeholder="请输入管理密码" required autofocus>
+                </div>
+                <button type="submit" class="btn btn-primary">登录</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="container" id="mainContainer" style="display: none;">
+        <div class="header">
+            <h1>⚙️ 配置管理</h1>
+            <p>KitfoxPay 支付平台配置管理界面</p>
+            <button class="btn btn-secondary logout-btn" onclick="logout()">登出</button>
+        </div>
+
+        <div class="content">
+            <div id="alert" class="alert"></div>
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <p style="margin-top: 10px;">加载中...</p>
+            </div>
+
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="server" onclick="showTab('server')">🌐 网站设置</button>
+                <button class="tab-btn" data-tab="jeepay" onclick="showTab('jeepay')">🚀 Jeepay 配置</button>
+                <button class="tab-btn" data-tab="epay" onclick="showTab('epay')">💳 易支付 配置</button>
+                <button class="tab-btn" data-tab="tests" onclick="showTab('tests')">🧪 接口调试</button>
+            </div>
+
+            <!-- 网站设置 Tab -->
+            <div id="tabServer" class="tab-pane active">
+                <form id="serverForm">
+                    <!-- 网站域名配置 -->
+                    <div class="section">
+                        <div class="section-header">
+                            <span><span class="icon">🌐</span> 网站域名配置</span>
+                        </div>
+                        <div class="section-content">
+                            <div class="form-group">
+                                <label for="siteDomain">网站域名</label>
+                                <input type="text" id="siteDomain" name="siteDomain" placeholder="http://localhost:9219" required>
+                                <div class="help-text">用于生成通知URL和支付跳转URL的网站域名（例如：http://yourdomain.com 或 https://yourdomain.com）</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 服务器配置 -->
+                    <div class="section">
+                        <div class="section-header">
+                            <span><span class="icon">🖥️</span> 服务器配置</span>
+                        </div>
+                        <div class="section-content">
+                            <div class="form-group">
+                                <label for="serverHost">绑定IP地址</label>
+                                <div style="display: flex; gap: 10px;">
+                                    <select id="serverHostSelect" style="flex: 0 0 150px; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" onchange="selectServerHost()">
+                                        <option value="">选择IP...</option>
+                                    </select>
+                                    <input type="text" id="serverHost" name="serverHost" placeholder="0.0.0.0" required style="flex: 1;">
+                                </div>
+                                <div class="help-text">服务器绑定的IP地址，0.0.0.0 表示监听所有网络接口。可以从下拉列表选择本机IP，或手动输入</div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="serverPort">绑定端口</label>
+                                <input type="number" id="serverPort" name="serverPort" placeholder="9219" required>
+                                <div class="help-text">服务器绑定的端口号</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 管理密码配置 -->
+                    <div class="section">
+                        <div class="section-header">
+                            <span><span class="icon">🔐</span> 管理密码配置</span>
+                        </div>
+                        <div class="section-content">
+                            <div class="form-group">
+                                <label for="adminPassword">管理密码</label>
+                                <input type="password" id="adminPassword" name="adminPassword" placeholder="请输入新的管理密码（留空则保持原密码）">
+                                <div class="help-text">用于访问配置管理界面的密码。留空则保持当前密码不变</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="actions">
+                        <button type="button" class="btn btn-secondary" onclick="loadConfig()">🔄 重新加载</button>
+                        <button type="button" class="btn btn-danger" onclick="resetServerConfig()">↩️ 重置</button>
+                        <button type="button" class="btn btn-primary" onclick="saveConfig()">💾 保存配置</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Jeepay 配置 Tab -->
+            <div id="tabJeepay" class="tab-pane">
+                <form id="jeepayForm">
+                    <div class="section">
+                        <div class="section-header">
+                            <span><span class="icon">🚀</span> Jeepay 配置</span>
+                        </div>
+                        <div class="section-content">
+                            <div class="form-group">
+                                <label for="baseUrl">API 基础URL</label>
+                                <input type="text" id="baseUrl" name="baseUrl" placeholder="https://api.pay.kitfoxai.art" required>
+                                <div class="help-text">Jeepay API 的基础地址</div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="mchNo">商户号</label>
+                                <input type="text" id="mchNo" name="mchNo" placeholder="M1766735992" required>
+                                <div class="help-text">您的 Jeepay 商户号</div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="appId">应用ID</label>
+                                <input type="text" id="appId" name="appId" placeholder="694e8f00e4b00abc767ea3b8" required>
+                                <div class="help-text">您的 Jeepay 应用ID</div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="privateKey">商户私钥</label>
+                                <textarea id="privateKey" name="privateKey" class="large" placeholder="您的商户私钥" required></textarea>
+                                <div class="help-text">用于签名请求的商户私钥。注意：Jeepay 的私钥格式可能不是标准的 PEM 格式，请根据平台要求填写</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="actions">
+                        <button type="button" class="btn btn-secondary" onclick="loadConfig()">🔄 重新加载</button>
+                        <button type="button" class="btn btn-danger" onclick="resetJeepayConfig()">↩️ 重置</button>
+                        <button type="button" class="btn btn-primary" onclick="saveConfig()">💾 保存配置</button>
+                    </div>
+                </form>
+            </div>
+
+
+            <!-- 易支付 配置 Tab -->
+            <div id="tabEpay" class="tab-pane">
+                <form id="epayForm">
+                    <div class="section">
+                        <div class="section-header">
+                            <span><span class="icon">💳</span> 易支付 配置</span>
+                        </div>
+                        <div class="section-content">
+                            <div class="form-group">
+                                <label for="epayPid">商户ID</label>
+                                <input type="text" id="epayPid" name="epayPid" placeholder="你的商户ID" required>
+                                <div class="help-text">您的 易支付 商户ID</div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="epayKey">商户密钥</label>
+                                <div style="display: flex; gap: 10px;">
+                                    <input type="text" id="epayKey" name="epayKey" placeholder="你的商户密钥" required style="flex: 1;">
+                                    <button type="button" class="btn btn-secondary" onclick="generateEpayKey()" style="white-space: nowrap; padding: 8px 15px;">🎲 生成32位密钥</button>
+                                </div>
+                                <div class="help-text">用于 MD5 签名的商户密钥（必填）。可以点击按钮生成随机32位密钥</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="actions">
+                        <button type="button" class="btn btn-secondary" onclick="loadConfig()">🔄 重新加载</button>
+                        <button type="button" class="btn btn-danger" onclick="resetEpayConfig()">↩️ 重置</button>
+                        <button type="button" class="btn btn-primary" onclick="saveConfig()">💾 保存配置</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 接口调试 Tab -->
+            <div id="tabTests" class="tab-pane">
+                <!-- 测试模块 -->
+                <div style="margin-top: 10px;">
+                    <h2 style="margin-bottom: 20px; color: #333;">🧪 接口测试</h2>
+
+                    <!-- Jeepay 测试模块 -->
+                    <div class="section">
+                        <div class="section-header">
+                            <span><span class="icon">🚀</span> Jeepay 接口测试</span>
+                        </div>
+                        <div class="section-content">
+                            <div style="margin-bottom: 20px;">
+                                <button type="button" class="btn btn-secondary" onclick="showJeepayTest('unified-order')" style="margin-right: 10px;">统一下单测试</button>
+                                <button type="button" class="btn btn-secondary" onclick="showJeepayTest('query-order')">查询订单测试</button>
+                            </div>
+
+                        <!-- 统一下单测试 -->
+                        <div id="jeepayUnifiedOrderTest" style="display: none;">
+                            <h3 style="margin-bottom: 15px; font-size: 16px;">统一下单测试</h3>
+                            <div class="form-group">
+                                <label>商户订单号</label>
+                                <input type="text" id="jeepayTestMchOrderNo" placeholder="TEST_ORDER_1234567890" value="TEST_ORDER_">
+                            </div>
+                            <div class="form-group">
+                                <label>支付方式</label>
+                                <select id="jeepayTestWayCode" onchange="updateJeepayChannelExtraHelp()" style="width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px;">
+                                    <optgroup label="聚合支付">
+                                        <option value="QR_CASHIER">聚合扫码(用户扫商家)</option>
+                                        <option value="AUTO_BAR">聚合条码(商家扫用户)</option>
+                                    </optgroup>
+                                    <optgroup label="支付宝">
+                                        <option value="ALI_BAR">支付宝条码</option>
+                                        <option value="ALI_JSAPI">支付宝生活号</option>
+                                        <option value="ALI_APP">支付宝APP</option>
+                                        <option value="ALI_WAP">支付宝WAP</option>
+                                        <option value="ALI_PC" selected>支付宝PC网站</option>
+                                        <option value="ALI_QR">支付宝二维码</option>
+                                    </optgroup>
+                                    <optgroup label="微信支付">
+                                        <option value="WX_BAR">微信条码</option>
+                                        <option value="WX_JSAPI">微信公众号</option>
+                                        <option value="WX_LITE">微信小程序</option>
+                                        <option value="WX_APP">微信APP</option>
+                                        <option value="WX_H5">微信H5</option>
+                                        <option value="WX_NATIVE">微信扫码</option>
+                                    </optgroup>
+                                    <optgroup label="云闪付">
+                                        <option value="YSF_BAR">云闪付条码</option>
+                                        <option value="YSF_JSAPI">云闪付jsapi</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>支付金额（分）</label>
+                                <input type="number" id="jeepayTestAmount" placeholder="100" value="100">
+                            </div>
+                            <div class="form-group">
+                                <label>商品标题</label>
+                                <input type="text" id="jeepayTestSubject" placeholder="测试商品" value="测试商品">
+                            </div>
+                            <div class="form-group">
+                                <label>商品描述</label>
+                                <input type="text" id="jeepayTestBody" placeholder="测试商品描述" value="测试商品描述">
+                            </div>
+                            <div class="form-group">
+                                <label>渠道扩展参数 (channelExtra)</label>
+                                <div id="jeepayChannelExtraHelp" style="padding: 10px; background: #f0f7ff; border-left: 3px solid #2196F3; margin-bottom: 10px; border-radius: 4px; font-size: 13px; line-height: 1.6;">
+                                    <strong>提示：</strong>根据选择的支付方式，channelExtra 参数要求不同，请查看下方说明。
+                                </div>
+                                <div id="jeepayChannelExtraInputs" style="display: none;">
+                                    <!-- 条码支付 -->
+                                    <div id="jeepayChannelExtraBar" style="display: none;">
+                                        <label style="font-size: 13px; color: #666; margin-bottom: 5px;">付款码 (auth_code) <span style="color: red;">*必填</span></label>
+                                        <input type="text" id="jeepayChannelExtraAuthCode" placeholder="请输入用户的付款码，如：13920933111042" style="width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px;">
+                                    </div>
+                                    <!-- JSAPI 支付 -->
+                                    <div id="jeepayChannelExtraJSAPI" style="display: none;">
+                                        <label style="font-size: 13px; color: #666; margin-bottom: 5px;">用户标识</label>
+                                        <div id="jeepayChannelExtraBuyerUserId" style="display: none;">
+                                            <label style="font-size: 12px; color: #666;">支付宝用户ID (buyerUserId) <span style="color: red;">*必填</span></label>
+                                            <input type="text" id="jeepayChannelExtraBuyerUserIdInput" placeholder="请输入支付宝用户ID，如：2088702585070844" style="width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 10px;">
+                                        </div>
+                                        <div id="jeepayChannelExtraOpenid" style="display: none;">
+                                            <label style="font-size: 12px; color: #666;">微信OpenID (openid) <span style="color: red;">*必填</span></label>
+                                            <input type="text" id="jeepayChannelExtraOpenidInput" placeholder="请输入微信OpenID，如：o6BcIwvSiRpfS8e_UyfQNrYuk2LI" style="width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px;">
+                                        </div>
+                                    </div>
+                                    <!-- 扫码支付 -->
+                                    <div id="jeepayChannelExtraQR" style="display: none;">
+                                        <label style="font-size: 13px; color: #666; margin-bottom: 5px;">支付数据类型 (payDataType) <span style="color: #999;">可选</span></label>
+                                        <select id="jeepayChannelExtraPayDataType" style="width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px;">
+                                            <option value="">默认 (codeUrl)</option>
+                                            <option value="codeUrl">codeUrl - 二维码地址</option>
+                                            <option value="codeImgUrl">codeImgUrl - 二维码图片地址</option>
+                                        </select>
+                                    </div>
+                                    <!-- WAP/PC 支付 -->
+                                    <div id="jeepayChannelExtraWAP" style="display: none;">
+                                        <label style="font-size: 13px; color: #666; margin-bottom: 5px;">支付数据类型 (payDataType) <span style="color: #999;">可选</span></label>
+                                        <select id="jeepayChannelExtraPayDataTypeWAP" style="width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px;">
+                                            <option value="">默认 (payUrl)</option>
+                                            <option value="payUrl">payUrl - 支付链接</option>
+                                            <option value="form">form - 自动跳转的支付表单</option>
+                                            <option value="codeImgUrl">codeImgUrl - 二维码图片URL (仅WAP)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="help-text" style="margin-top: 10px; font-size: 12px; color: #666;">
+                                    提示：channelExtra 参数会根据选择的支付方式自动构建 JSON 格式
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-primary" onclick="testJeepayUnifiedOrder()">执行测试</button>
+                            <div id="jeepayUnifiedOrderResult" style="margin-top: 15px; padding: 15px; background: #f5f5f5; border-radius: 6px; display: none;">
+                                <h4 style="margin-bottom: 10px;">测试结果：</h4>
+                                <pre id="jeepayUnifiedOrderResultContent" style="white-space: pre-wrap; word-wrap: break-word; font-size: 12px; max-height: 400px; overflow-y: auto;"></pre>
+                            </div>
+                        </div>
+
+                        <!-- 查询订单测试 -->
+                        <div id="jeepayQueryOrderTest" style="display: none;">
+                            <h3 style="margin-bottom: 15px; font-size: 16px;">查询订单测试</h3>
+                            <div class="form-group">
+                                <label>支付订单号（可选）</label>
+                                <input type="text" id="jeepayTestPayOrderId" placeholder="支付订单号">
+                            </div>
+                            <div class="form-group">
+                                <label>商户订单号（可选）</label>
+                                <input type="text" id="jeepayTestMchOrderNoQuery" placeholder="商户订单号">
+                            </div>
+                            <div class="help-text">支付订单号和商户订单号至少填写一个</div>
+                            <button type="button" class="btn btn-primary" onclick="testJeepayQueryOrder()">执行测试</button>
+                            <div id="jeepayQueryOrderResult" style="margin-top: 15px; padding: 15px; background: #f5f5f5; border-radius: 6px; display: none;">
+                                <h4 style="margin-bottom: 10px;">测试结果：</h4>
+                                <pre id="jeepayQueryOrderResultContent" style="white-space: pre-wrap; word-wrap: break-word; font-size: 12px; max-height: 400px; overflow-y: auto;"></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 易支付测试模块 -->
+                <div class="section" style="margin-top: 20px;">
+                    <div class="section-header">
+                        <span><span class="icon">💳</span> 易支付接口测试</span>
+                    </div>
+                    <div class="section-content">
+                        <div style="margin-bottom: 20px;">
+                            <button type="button" class="btn btn-secondary" onclick="showEpayTest('create-order')" style="margin-right: 10px;">创建订单测试</button>
+                            <button type="button" class="btn btn-secondary" onclick="showEpayTest('submit-order')" style="margin-right: 10px;">提交订单测试</button>
+                            <button type="button" class="btn btn-secondary" onclick="showEpayTest('query-order')" style="margin-right: 10px;">查询订单测试</button>
+                            <button type="button" class="btn btn-secondary" onclick="showEpayTest('refund')">退款测试</button>
+                        </div>
+
+                        <!-- 创建订单测试 -->
+                        <div id="epayCreateOrderTest" style="display: none;">
+                            <h3 style="margin-bottom: 15px; font-size: 16px;">创建订单测试（mapi.php）</h3>
+                            <div class="form-group">
+                                <label>商户订单号</label>
+                                <input type="text" id="epayTestOutTradeNo" placeholder="TEST_ORDER_1234567890" value="TEST_ORDER_">
+                            </div>
+                            <div class="form-group">
+                                <label>支付方式</label>
+                                <select id="epayTestType" style="width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px;">
+                                    <optgroup label="聚合支付">
+                                        <option value="qr_cashier">聚合扫码(用户扫商家)</option>
+                                        <option value="auto_bar">聚合条码(商家扫用户)</option>
+                                    </optgroup>
+                                    <optgroup label="支付宝">
+                                        <option value="alipay">支付宝(默认WAP)</option>
+                                        <option value="alipay_wap">支付宝WAP</option>
+                                        <option value="alipay_pc" selected>支付宝PC网站</option>
+                                        <option value="alipay_app">支付宝APP</option>
+                                        <option value="alipay_qr">支付宝二维码</option>
+                                        <option value="alipay_bar">支付宝条码</option>
+                                        <option value="alipay_jsapi">支付宝生活号</option>
+                                    </optgroup>
+                                    <optgroup label="微信支付">
+                                        <option value="wxpay">微信支付(默认小程序)</option>
+                                        <option value="wxpay_jsapi">微信公众号</option>
+                                        <option value="wxpay_lite">微信小程序</option>
+                                        <option value="wxpay_h5">微信H5</option>
+                                        <option value="wxpay_native">微信扫码</option>
+                                        <option value="wxpay_bar">微信条码</option>
+                                        <option value="wxpay_app">微信APP</option>
+                                    </optgroup>
+                                    <optgroup label="QQ钱包">
+                                        <option value="qqpay_jsapi">QQ钱包JSAPI</option>
+                                        <option value="qqpay_native">QQ钱包扫码</option>
+                                    </optgroup>
+                                    <optgroup label="云闪付">
+                                        <option value="ysf_bar">云闪付条码</option>
+                                        <option value="ysf_jsapi">云闪付jsapi</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>支付金额（元）</label>
+                                <input type="text" id="epayTestMoney" placeholder="0.01" value="0.01">
+                            </div>
+                            <div class="form-group">
+                                <label>商品名称</label>
+                                <input type="text" id="epayTestName" placeholder="测试商品" value="测试商品">
+                            </div>
+                            <div class="form-group">
+                                <label>异步通知地址（可选）</label>
+                                <input type="text" id="epayTestNotifyUrl" placeholder="http://example.com/notify">
+                            </div>
+                            <button type="button" class="btn btn-primary" onclick="testMyZWFCreateOrder()">执行测试</button>
+                            <div id="epayCreateOrderResult" style="margin-top: 15px; padding: 15px; background: #f5f5f5; border-radius: 6px; display: none;">
+                                <h4 style="margin-bottom: 10px;">测试结果：</h4>
+                                <pre id="epayCreateOrderResultContent" style="white-space: pre-wrap; word-wrap: break-word; font-size: 12px; max-height: 400px; overflow-y: auto;"></pre>
+                            </div>
+                        </div>
+
+                        <!-- 提交订单测试 -->
+                        <div id="epaySubmitOrderTest" style="display: none;">
+                            <h3 style="margin-bottom: 15px; font-size: 16px;">提交订单测试（submit.php）</h3>
+                            <div class="form-group">
+                                <label>商户订单号</label>
+                                <input type="text" id="epayTestOutTradeNoSubmit" placeholder="TEST_ORDER_1234567890" value="TEST_ORDER_">
+                            </div>
+                            <div class="form-group">
+                                <label>支付方式</label>
+                                <select id="epayTestTypeSubmit" style="width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px;">
+                                    <optgroup label="聚合支付">
+                                        <option value="qr_cashier">聚合扫码(用户扫商家)</option>
+                                        <option value="auto_bar">聚合条码(商家扫用户)</option>
+                                    </optgroup>
+                                    <optgroup label="支付宝">
+                                        <option value="alipay">支付宝(默认WAP)</option>
+                                        <option value="alipay_wap">支付宝WAP</option>
+                                        <option value="alipay_pc" selected>支付宝PC网站</option>
+                                        <option value="alipay_app">支付宝APP</option>
+                                        <option value="alipay_qr">支付宝二维码</option>
+                                        <option value="alipay_bar">支付宝条码</option>
+                                        <option value="alipay_jsapi">支付宝生活号</option>
+                                    </optgroup>
+                                    <optgroup label="微信支付">
+                                        <option value="wxpay">微信支付(默认小程序)</option>
+                                        <option value="wxpay_jsapi">微信公众号</option>
+                                        <option value="wxpay_lite">微信小程序</option>
+                                        <option value="wxpay_h5">微信H5</option>
+                                        <option value="wxpay_native">微信扫码</option>
+                                        <option value="wxpay_bar">微信条码</option>
+                                        <option value="wxpay_app">微信APP</option>
+                                    </optgroup>
+                                    <optgroup label="QQ钱包">
+                                        <option value="qqpay_jsapi">QQ钱包JSAPI</option>
+                                        <option value="qqpay_native">QQ钱包扫码</option>
+                                    </optgroup>
+                                    <optgroup label="云闪付">
+                                        <option value="ysf_bar">云闪付条码</option>
+                                        <option value="ysf_jsapi">云闪付jsapi</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>支付金额（元）</label>
+                                <input type="text" id="epayTestMoneySubmit" placeholder="0.01" value="0.01">
+                            </div>
+                            <div class="form-group">
+                                <label>商品名称</label>
+                                <input type="text" id="epayTestNameSubmit" placeholder="测试商品" value="测试商品">
+                            </div>
+                            <div class="form-group">
+                                <label>异步通知地址（可选）</label>
+                                <input type="text" id="epayTestNotifyUrlSubmit" placeholder="http://example.com/notify">
+                            </div>
+                            <div class="form-group">
+                                <label>同步跳转地址（可选）</label>
+                                <input type="text" id="epayTestReturnUrlSubmit" placeholder="http://example.com/return">
+                            </div>
+                            <button type="button" class="btn btn-primary" onclick="testEpaySubmitOrder()">执行测试</button>
+                            <div id="epaySubmitOrderResult" style="margin-top: 15px; padding: 15px; background: #f5f5f5; border-radius: 6px; display: none;">
+                                <h4 style="margin-bottom: 10px;">测试结果：</h4>
+                                <div id="epaySubmitOrderResultContent" style="white-space: pre-wrap; word-wrap: break-word; font-size: 12px; max-height: 400px; overflow-y: auto;"></div>
+                            </div>
+                        </div>
+
+                        <!-- 查询订单测试 -->
+                        <div id="epayQueryOrderTest" style="display: none;">
+                            <h3 style="margin-bottom: 15px; font-size: 16px;">查询订单测试（api.php?act=order）</h3>
+                            <div class="form-group">
+                                <label>商户订单号（可选）</label>
+                                <input type="text" id="epayTestOutTradeNoQuery" placeholder="商户订单号">
+                            </div>
+                            <div class="form-group">
+                                <label>平台订单号（可选）</label>
+                                <input type="text" id="epayTestTradeNoQuery" placeholder="平台订单号">
+                            </div>
+                            <div class="help-text">商户订单号和平台订单号至少填写一个</div>
+                            <button type="button" class="btn btn-primary" onclick="testEpayQueryOrder()">执行测试</button>
+                            <div id="epayQueryOrderResult" style="margin-top: 15px; padding: 15px; background: #f5f5f5; border-radius: 6px; display: none;">
+                                <h4 style="margin-bottom: 10px;">测试结果：</h4>
+                                <pre id="epayQueryOrderResultContent" style="white-space: pre-wrap; word-wrap: break-word; font-size: 12px; max-height: 400px; overflow-y: auto;"></pre>
+                            </div>
+                        </div>
+
+                        <!-- 退款测试 -->
+                        <div id="epayRefundTest" style="display: none;">
+                            <h3 style="margin-bottom: 15px; font-size: 16px;">退款测试（api.php?act=refund）</h3>
+                            <div class="form-group">
+                                <label>商户订单号（可选）</label>
+                                <input type="text" id="epayTestOutTradeNoRefund" placeholder="商户订单号">
+                            </div>
+                            <div class="form-group">
+                                <label>平台订单号（可选）</label>
+                                <input type="text" id="epayTestTradeNoRefund" placeholder="平台订单号">
+                            </div>
+                            <div class="form-group">
+                                <label>退款金额（元）</label>
+                                <input type="text" id="epayTestRefundMoney" placeholder="0.01" value="0.01">
+                            </div>
+                            <div class="help-text">商户订单号和平台订单号至少填写一个</div>
+                            <button type="button" class="btn btn-primary" onclick="testEpayRefund()">执行测试</button>
+                            <div id="epayRefundResult" style="margin-top: 15px; padding: 15px; background: #f5f5f5; border-radius: 6px; display: none;">
+                                <h4 style="margin-bottom: 10px;">测试结果：</h4>
+                                <pre id="epayRefundResultContent" style="white-space: pre-wrap; word-wrap: break-word; font-size: 12px; max-height: 400px; overflow-y: auto;"></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 显示提示信息
+        function showAlert(message, type = 'success', alertId = 'alert') {
+            const alert = document.getElementById(alertId);
+            if (!alert) return;
+            alert.className = `alert alert-${type} show`;
+            alert.textContent = message;
+            alert.style.display = 'block';
+            setTimeout(() => {
+                alert.classList.remove('show');
+                setTimeout(() => {
+                    alert.style.display = 'none';
+                }, 300);
+            }, 5000);
+        }
+
+        // 检查登录状态
+        async function checkAuthStatus() {
+            try {
+                const response = await fetch('/api/admin/status', {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                
+                if (data.authenticated) {
+                    document.getElementById('loginOverlay').classList.remove('show');
+                    document.getElementById('mainContainer').style.display = 'block';
+                    loadConfig();
+                    loadNetworkInterfaces(); // 加载本机IP地址列表
+                } else {
+                    document.getElementById('loginOverlay').classList.add('show');
+                    document.getElementById('mainContainer').style.display = 'none';
+                }
+            } catch (error) {
+                console.error('检查登录状态失败:', error);
+                document.getElementById('loginOverlay').classList.add('show');
+                document.getElementById('mainContainer').style.display = 'none';
+            }
+        }
+
+        // 登录
+        async function login(password) {
+            try {
+                const response = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ password })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || '登录失败');
+                }
+
+                showAlert('登录成功', 'success', 'loginAlert');
+                setTimeout(() => {
+                    checkAuthStatus();
+                }, 500);
+            } catch (error) {
+                showAlert('登录失败: ' + error.message, 'error', 'loginAlert');
+            }
+        }
+
+        // 登出
+        async function logout() {
+            try {
+                const response = await fetch('/api/admin/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    document.getElementById('loginOverlay').classList.add('show');
+                    document.getElementById('mainContainer').style.display = 'none';
+                    document.getElementById('loginPassword').value = '';
+                }
+            } catch (error) {
+                console.error('登出失败:', error);
+            }
+        }
+
+        // 登录表单提交
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const password = document.getElementById('loginPassword').value;
+            if (password) {
+                await login(password);
+            }
+        });
+
+        // 显示/隐藏加载状态
+        function setLoading(show) {
+            const loading = document.getElementById('loading');
+            if (show) {
+                loading.classList.add('show');
+            } else {
+                loading.classList.remove('show');
+            }
+        }
+
+        // 切换Tab
+        function showTab(tabName) {
+            // 隐藏所有tab pane
+            document.querySelectorAll('.tab-pane').forEach(pane => {
+                pane.classList.remove('active');
+            });
+            
+            // 移除所有tab按钮的active状态
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // 显示选中的tab pane
+            const targetPane = document.getElementById('tab' + tabName.charAt(0).toUpperCase() + tabName.slice(1));
+            if (targetPane) {
+                targetPane.classList.add('active');
+            }
+            
+            // 激活选中的tab按钮
+            const targetBtn = document.querySelector(`[data-tab="${tabName}"]`);
+            if (targetBtn) {
+                targetBtn.classList.add('active');
+            }
+        }
+
+        // 切换密码显示
+        function togglePassword(id) {
+            const input = document.getElementById(id);
+            input.type = input.type === 'password' ? 'text' : 'password';
+        }
+
+        // 选择服务器IP地址
+        function selectServerHost() {
+            const select = document.getElementById('serverHostSelect');
+            const input = document.getElementById('serverHost');
+            if (select.value) {
+                input.value = select.value;
+            }
+        }
+
+        // 生成32位随机商户密钥
+        function generateEpayKey() {
+            // 生成32位随机字符串（包含大小写字母和数字）
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let key = '';
+            for (let i = 0; i < 32; i++) {
+                key += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            document.getElementById('epayKey').value = key;
+            showAlert('已生成32位随机密钥', 'success');
+        }
+
+        // 加载本机IP地址列表
+        async function loadNetworkInterfaces() {
+            try {
+                const response = await fetch('/api/config/network-interfaces', {
+                    credentials: 'include'
+                });
+                
+                if (response.status === 401) {
+                    // 未授权，稍后重试
+                    return;
+                }
+                
+                if (!response.ok) {
+                    console.warn('获取网络接口失败');
+                    return;
+                }
+                
+                const result = await response.json();
+                const select = document.getElementById('serverHostSelect');
+                
+                // 清空现有选项（保留"选择IP..."）
+                while (select.options.length > 1) {
+                    select.remove(1);
+                }
+                
+                // 添加IP地址选项
+                if (result.ipList && result.ipList.length > 0) {
+                    result.ipList.forEach(ip => {
+                        const option = document.createElement('option');
+                        option.value = ip;
+                        let label = ip;
+                        if (ip === '0.0.0.0') {
+                            label = '0.0.0.0 (所有接口)';
+                        } else if (ip === '127.0.0.1') {
+                            label = '127.0.0.1 (本地回环)';
+                        }
+                        option.textContent = label;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.warn('加载网络接口失败:', error);
+            }
+        }
+
+        // 加载配置
+        async function loadConfig() {
+            setLoading(true);
+            try {
+                const response = await fetch('/api/config', {
+                    credentials: 'include'
+                });
+                
+                if (response.status === 401) {
+                    // 未授权，需要登录
+                    checkAuthStatus();
+                    return;
+                }
+                
+                if (!response.ok) {
+                    throw new Error('加载配置失败');
+                }
+                
+                const config = await response.json();
+                
+                // 填充表单
+                try {
+                    document.getElementById('baseUrl').value = config.jeepay?.baseUrl || '';
+                    document.getElementById('mchNo').value = config.jeepay?.mchNo || '';
+                    document.getElementById('appId').value = config.jeepay?.appId || '';
+                    document.getElementById('privateKey').value = config.jeepay?.privateKey || '';
+                    document.getElementById('siteDomain').value = config.server?.siteDomain || '';
+                    document.getElementById('epayPid').value = config.epay?.pid || '';
+                    document.getElementById('epayKey').value = config.epay?.key || '';
+                    document.getElementById('serverHost').value = config.server?.host || '';
+                    document.getElementById('serverPort').value = config.server?.port || '';
+                    // 不填充密码字段
+                    
+                    // 重新加载IP地址列表
+                    loadNetworkInterfaces();
+                    
+                    showAlert('✅ 配置加载成功', 'success');
+                } catch (error) {
+                    showAlert('❌ 配置加载失败: 表单填充错误 - ' + error.message, 'error');
+                }
+            } catch (error) {
+                if (error.message.includes('401') || error.message.includes('未授权')) {
+                    checkAuthStatus();
+                    showAlert('❌ 配置加载失败: 未授权，请重新登录', 'error');
+                } else {
+                    showAlert('❌ 配置加载失败: ' + error.message, 'error');
+                }
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // 重置Jeepay配置
+        function resetJeepayConfig() {
+            if (confirm('确定要重置Jeepay配置吗？这将清空所有已填写的内容。')) {
+                try {
+                    document.getElementById('baseUrl').value = '';
+                    document.getElementById('mchNo').value = '';
+                    document.getElementById('appId').value = '';
+                    document.getElementById('privateKey').value = '';
+                    showAlert('✅ Jeepay配置重置成功', 'success');
+                } catch (error) {
+                    showAlert('❌ 配置重置失败: ' + error.message, 'error');
+                }
+            }
+        }
+
+        // 重置服务器配置
+        function resetServerConfig() {
+            if (confirm('确定要重置网站/服务器/管理密码配置吗？这将清空所有已填写的内容。')) {
+                try {
+                    document.getElementById('siteDomain').value = '';
+                    document.getElementById('serverHost').value = '';
+                    document.getElementById('serverPort').value = '';
+                    document.getElementById('adminPassword').value = '';
+                    showAlert('✅ 服务器配置重置成功', 'success');
+                } catch (error) {
+                    showAlert('❌ 配置重置失败: ' + error.message, 'error');
+                }
+            }
+        }
+
+        // 重置易支付配置
+        function resetEpayConfig() {
+            if (confirm('确定要重置易支付配置吗？这将清空所有已填写的内容。')) {
+                try {
+                    document.getElementById('epayPid').value = '';
+                    document.getElementById('epayKey').value = '';
+                    showAlert('✅ 易支付配置重置成功', 'success');
+                } catch (error) {
+                    showAlert('❌ 配置重置失败: ' + error.message, 'error');
+                }
+            }
+        }
+
+        // 保存配置（统一保存所有配置）
+        async function saveConfig() {
+            setLoading(true);
+
+            const adminPassword = document.getElementById('adminPassword').value.trim();
+            
+            const formData = {
+                jeepay: {
+                    baseUrl: document.getElementById('baseUrl').value.trim(),
+                    mchNo: document.getElementById('mchNo').value.trim(),
+                    appId: document.getElementById('appId').value.trim(),
+                    privateKey: document.getElementById('privateKey').value.trim()
+                },
+                epay: {
+                    pid: document.getElementById('epayPid').value.trim(),
+                    key: document.getElementById('epayKey').value.trim()
+                },
+                server: {
+                    host: document.getElementById('serverHost').value.trim(),
+                    port: parseInt(document.getElementById('serverPort').value) || 9219,
+                    siteDomain: document.getElementById('siteDomain').value.trim()
+                },
+                admin: {
+                    password: adminPassword || ''
+                }
+            };
+
+            try {
+                const response = await fetch('/api/config', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(formData)
+                });
+
+                if (response.status === 401) {
+                    // 未授权，需要重新登录
+                    checkAuthStatus();
+                    showAlert('❌ 保存配置失败: 会话已过期，请重新登录', 'error');
+                    setLoading(false);
+                    return;
+                }
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || '保存配置失败');
+                }
+
+                const result = await response.json();
+                showAlert('✅ 配置保存成功！请重启服务器使配置生效。', 'success');
+                
+                // 如果修改了密码，清空密码字段
+                if (adminPassword) {
+                    document.getElementById('adminPassword').value = '';
+                }
+            } catch (error) {
+                if (error.message.includes('401') || error.message.includes('未授权')) {
+                    checkAuthStatus();
+                    showAlert('❌ 保存配置失败: 未授权，请重新登录', 'error');
+                } else {
+                    showAlert('❌ 保存配置失败: ' + error.message, 'error');
+                }
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // ========== 测试功能 ==========
+
+        // 显示 Jeepay 测试界面
+        function showJeepayTest(type) {
+            // 隐藏所有测试界面
+            document.getElementById('jeepayUnifiedOrderTest').style.display = 'none';
+            document.getElementById('jeepayQueryOrderTest').style.display = 'none';
+            
+            // 隐藏所有结果
+            document.getElementById('jeepayUnifiedOrderResult').style.display = 'none';
+            document.getElementById('jeepayQueryOrderResult').style.display = 'none';
+            
+            // 显示选中的测试界面
+            if (type === 'unified-order') {
+                document.getElementById('jeepayUnifiedOrderTest').style.display = 'block';
+                // 自动生成测试订单号
+                if (!document.getElementById('jeepayTestMchOrderNo').value || document.getElementById('jeepayTestMchOrderNo').value === 'TEST_ORDER_') {
+                    document.getElementById('jeepayTestMchOrderNo').value = 'TEST_ORDER_' + Date.now();
+                }
+                // 更新 channelExtra 提示
+                updateJeepayChannelExtraHelp();
+            } else if (type === 'query-order') {
+                document.getElementById('jeepayQueryOrderTest').style.display = 'block';
+            }
+        }
+
+        // 页面加载时初始化支付方式默认值
+        function initPaymentTypeDefaults() {
+            // 确保 Jeepay 测试默认选择 ALI_PC
+            const jeepayWayCode = document.getElementById('jeepayTestWayCode');
+            if (jeepayWayCode && !jeepayWayCode.value) {
+                jeepayWayCode.value = 'ALI_PC';
+            }
+            
+            // 确保易支付测试默认选择 alipay_pc
+            const epayType = document.getElementById('epayTestType');
+            if (epayType && !epayType.value) {
+                epayType.value = 'alipay_pc';
+            }
+            
+            const epayTypeSubmit = document.getElementById('epayTestTypeSubmit');
+            if (epayTypeSubmit && !epayTypeSubmit.value) {
+                epayTypeSubmit.value = 'alipay_pc';
+            }
+        }
+
+        // 更新 Jeepay channelExtra 提示信息
+        function updateJeepayChannelExtraHelp() {
+            const wayCode = document.getElementById('jeepayTestWayCode').value;
+            const helpDiv = document.getElementById('jeepayChannelExtraHelp');
+            const inputsDiv = document.getElementById('jeepayChannelExtraInputs');
+            
+            // 隐藏所有输入框
+            document.getElementById('jeepayChannelExtraBar').style.display = 'none';
+            document.getElementById('jeepayChannelExtraJSAPI').style.display = 'none';
+            document.getElementById('jeepayChannelExtraQR').style.display = 'none';
+            document.getElementById('jeepayChannelExtraWAP').style.display = 'none';
+            document.getElementById('jeepayChannelExtraBuyerUserId').style.display = 'none';
+            document.getElementById('jeepayChannelExtraOpenid').style.display = 'none';
+            
+            // 条码支付
+            if (['AUTO_BAR', 'ALI_BAR', 'WX_BAR', 'YSF_BAR'].includes(wayCode)) {
+                inputsDiv.style.display = 'block';
+                document.getElementById('jeepayChannelExtraBar').style.display = 'block';
+                helpDiv.innerHTML = '<strong>条码支付：</strong>必须填写用户的付款码 (auth_code)，例如：13920933111042';
+            }
+            // JSAPI 支付
+            else if (wayCode === 'ALI_JSAPI') {
+                inputsDiv.style.display = 'block';
+                document.getElementById('jeepayChannelExtraJSAPI').style.display = 'block';
+                document.getElementById('jeepayChannelExtraBuyerUserId').style.display = 'block';
+                helpDiv.innerHTML = '<strong>支付宝生活号：</strong>必须填写支付宝用户ID (buyerUserId)，例如：2088702585070844';
+            }
+            else if (['WX_JSAPI', 'WX_LITE'].includes(wayCode)) {
+                inputsDiv.style.display = 'block';
+                document.getElementById('jeepayChannelExtraJSAPI').style.display = 'block';
+                document.getElementById('jeepayChannelExtraOpenid').style.display = 'block';
+                helpDiv.innerHTML = '<strong>微信JSAPI/小程序：</strong>必须填写微信OpenID (openid)，例如：o6BcIwvSiRpfS8e_UyfQNrYuk2LI';
+            }
+            // 扫码支付
+            else if (['QR_CASHIER', 'ALI_QR', 'WX_NATIVE'].includes(wayCode)) {
+                inputsDiv.style.display = 'block';
+                document.getElementById('jeepayChannelExtraQR').style.display = 'block';
+                helpDiv.innerHTML = '<strong>扫码支付：</strong>可选设置 payDataType，不传默认返回 codeUrl (二维码地址)，可设置为 codeImgUrl (二维码图片地址)';
+            }
+            // WAP/PC 支付
+            else if (wayCode === 'ALI_WAP') {
+                inputsDiv.style.display = 'block';
+                document.getElementById('jeepayChannelExtraWAP').style.display = 'block';
+                helpDiv.innerHTML = '<strong>支付宝WAP：</strong>可选设置 payDataType，不传默认返回 payUrl (支付链接)，可设置为 form (自动跳转表单) 或 codeImgUrl (二维码图片URL)';
+            }
+            else if (wayCode === 'ALI_PC') {
+                inputsDiv.style.display = 'block';
+                document.getElementById('jeepayChannelExtraWAP').style.display = 'block';
+                helpDiv.innerHTML = '<strong>支付宝PC：</strong>可选设置 payDataType，不传默认返回 payUrl (支付链接)，可设置为 form (自动跳转表单)';
+            }
+            // 其他支付方式不需要 channelExtra
+            else {
+                inputsDiv.style.display = 'none';
+                helpDiv.innerHTML = '<strong>提示：</strong>当前支付方式不需要 channelExtra 参数';
+            }
+        }
+
+        // 构建 channelExtra JSON
+        function buildChannelExtra() {
+            const wayCode = document.getElementById('jeepayTestWayCode').value;
+            const channelExtra = {};
+            
+            // 条码支付
+            if (['AUTO_BAR', 'ALI_BAR', 'WX_BAR', 'YSF_BAR'].includes(wayCode)) {
+                const authCode = document.getElementById('jeepayChannelExtraAuthCode').value.trim();
+                if (authCode) {
+                    channelExtra.auth_code = authCode;
+                }
+            }
+            // JSAPI 支付
+            else if (wayCode === 'ALI_JSAPI') {
+                const buyerUserId = document.getElementById('jeepayChannelExtraBuyerUserIdInput').value.trim();
+                if (buyerUserId) {
+                    channelExtra.buyerUserId = buyerUserId;
+                }
+            }
+            else if (['WX_JSAPI', 'WX_LITE'].includes(wayCode)) {
+                const openid = document.getElementById('jeepayChannelExtraOpenidInput').value.trim();
+                if (openid) {
+                    channelExtra.openid = openid;
+                }
+            }
+            // 扫码支付
+            else if (['QR_CASHIER', 'ALI_QR', 'WX_NATIVE'].includes(wayCode)) {
+                const payDataType = document.getElementById('jeepayChannelExtraPayDataType').value;
+                if (payDataType) {
+                    channelExtra.payDataType = payDataType;
+                }
+            }
+            // WAP/PC 支付
+            else if (['ALI_WAP', 'ALI_PC'].includes(wayCode)) {
+                const payDataType = document.getElementById('jeepayChannelExtraPayDataTypeWAP').value;
+                if (payDataType) {
+                    channelExtra.payDataType = payDataType;
+                }
+            }
+            
+            return Object.keys(channelExtra).length > 0 ? JSON.stringify(channelExtra) : '';
+        }
+
+        // 显示易支付测试界面
+        function showEpayTest(type) {
+            try {
+                // 隐藏所有测试界面
+                const createOrderTest = document.getElementById('epayCreateOrderTest');
+                const submitOrderTest = document.getElementById('epaySubmitOrderTest');
+                const queryOrderTest = document.getElementById('epayQueryOrderTest');
+                const refundTest = document.getElementById('epayRefundTest');
+                
+                if (createOrderTest) createOrderTest.style.display = 'none';
+                if (submitOrderTest) submitOrderTest.style.display = 'none';
+                if (queryOrderTest) queryOrderTest.style.display = 'none';
+                if (refundTest) refundTest.style.display = 'none';
+                
+                // 隐藏所有结果
+                const createOrderResult = document.getElementById('epayCreateOrderResult');
+                const submitOrderResult = document.getElementById('epaySubmitOrderResult');
+                const queryOrderResult = document.getElementById('epayQueryOrderResult');
+                const refundResult = document.getElementById('epayRefundResult');
+                
+                if (createOrderResult) createOrderResult.style.display = 'none';
+                if (submitOrderResult) submitOrderResult.style.display = 'none';
+                if (queryOrderResult) queryOrderResult.style.display = 'none';
+                if (refundResult) refundResult.style.display = 'none';
+                
+                // 显示选中的测试界面
+                if (type === 'create-order' && createOrderTest) {
+                    createOrderTest.style.display = 'block';
+                    // 自动生成测试订单号
+                    const outTradeNo = document.getElementById('epayTestOutTradeNo');
+                    if (outTradeNo && (!outTradeNo.value || outTradeNo.value === 'TEST_ORDER_')) {
+                        outTradeNo.value = 'TEST_ORDER_' + Date.now();
+                    }
+                } else if (type === 'submit-order' && submitOrderTest) {
+                    submitOrderTest.style.display = 'block';
+                    // 自动生成测试订单号
+                    const outTradeNoSubmit = document.getElementById('epayTestOutTradeNoSubmit');
+                    if (outTradeNoSubmit && (!outTradeNoSubmit.value || outTradeNoSubmit.value === 'TEST_ORDER_')) {
+                        outTradeNoSubmit.value = 'TEST_ORDER_' + Date.now();
+                    }
+                } else if (type === 'query-order' && queryOrderTest) {
+                    queryOrderTest.style.display = 'block';
+                } else if (type === 'refund' && refundTest) {
+                    refundTest.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('显示易支付测试界面失败:', error);
+                showAlert('❌ 显示测试界面失败: ' + error.message, 'error');
+            }
+        }
+
+        // 测试 Jeepay 统一下单
+        async function testJeepayUnifiedOrder() {
+            setLoading(true);
+            try {
+                const channelExtra = buildChannelExtra();
+                const params = {
+                    mchOrderNo: document.getElementById('jeepayTestMchOrderNo').value.trim(),
+                    wayCode: document.getElementById('jeepayTestWayCode').value,
+                    amount: parseInt(document.getElementById('jeepayTestAmount').value),
+                    subject: document.getElementById('jeepayTestSubject').value.trim(),
+                    body: document.getElementById('jeepayTestBody').value.trim()
+                };
+                
+                if (channelExtra) {
+                    params.channelExtra = channelExtra;
+                }
+
+                const response = await fetch('/api/test/jeepay/unified-order', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(params)
+                });
+
+                const result = await response.json();
+                const resultDiv = document.getElementById('jeepayUnifiedOrderResult');
+                const resultContent = document.getElementById('jeepayUnifiedOrderResultContent');
+                
+                resultDiv.style.display = 'block';
+                resultContent.textContent = JSON.stringify(result, null, 2);
+                
+                if (result.success) {
+                    showAlert('✅ Jeepay 统一下单测试成功', 'success');
+                } else {
+                    showAlert('❌ Jeepay 统一下单测试失败: ' + (result.message || '未知错误'), 'error');
+                }
+            } catch (error) {
+                const resultDiv = document.getElementById('jeepayUnifiedOrderResult');
+                const resultContent = document.getElementById('jeepayUnifiedOrderResultContent');
+                resultDiv.style.display = 'block';
+                resultContent.textContent = '错误: ' + error.message;
+                showAlert('❌ 测试失败: ' + error.message, 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // 测试 Jeepay 查询订单
+        async function testJeepayQueryOrder() {
+            setLoading(true);
+            try {
+                const params = {};
+                const payOrderId = document.getElementById('jeepayTestPayOrderId').value.trim();
+                const mchOrderNo = document.getElementById('jeepayTestMchOrderNoQuery').value.trim();
+                
+                if (payOrderId) params.payOrderId = payOrderId;
+                if (mchOrderNo) params.mchOrderNo = mchOrderNo;
+
+                if (!payOrderId && !mchOrderNo) {
+                    showAlert('❌ 请至少填写支付订单号或商户订单号', 'error');
+                    setLoading(false);
+                    return;
+                }
+
+                const response = await fetch('/api/test/jeepay/query-order', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(params)
+                });
+
+                const result = await response.json();
+                const resultDiv = document.getElementById('jeepayQueryOrderResult');
+                const resultContent = document.getElementById('jeepayQueryOrderResultContent');
+                
+                resultDiv.style.display = 'block';
+                resultContent.textContent = JSON.stringify(result, null, 2);
+                
+                if (result.success) {
+                    showAlert('✅ Jeepay 查询订单测试成功', 'success');
+                } else {
+                    showAlert('❌ Jeepay 查询订单测试失败: ' + (result.message || '未知错误'), 'error');
+                }
+            } catch (error) {
+                const resultDiv = document.getElementById('jeepayQueryOrderResult');
+                const resultContent = document.getElementById('jeepayQueryOrderResultContent');
+                resultDiv.style.display = 'block';
+                resultContent.textContent = '错误: ' + error.message;
+                showAlert('❌ 测试失败: ' + error.message, 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // 测试易支付创建订单
+        async function testMyZWFCreateOrder() {
+            setLoading(true);
+            try {
+                // 获取配置中的商户ID和密钥
+                const configResponse = await fetch('/api/config', {
+                    credentials: 'include'
+                });
+                if (!configResponse.ok) {
+                    throw new Error('无法获取配置信息');
+                }
+                const config = await configResponse.json();
+
+                if (!config.epay || !config.epay.pid || !config.epay.key) {
+                    throw new Error('请先配置易支付的商户ID和密钥');
+                }
+
+                // 构建测试参数
+                const params = {
+                    pid: config.epay.pid,
+                    out_trade_no: document.getElementById('epayTestOutTradeNo').value.trim() || 'TEST_ORDER_' + Date.now(),
+                    type: document.getElementById('epayTestType').value,
+                    money: document.getElementById('epayTestMoney').value.trim() || '0.01',
+                    name: document.getElementById('epayTestName').value.trim() || '测试商品',
+                    notify_url: document.getElementById('epayTestNotifyUrl').value.trim() || ''
+                };
+
+                // 生成签名（需要调用签名生成函数）
+                // 这里我们需要先获取签名，但为了简化，我们可以让后端处理
+                // 或者在前端生成签名
+                const signResponse = await fetch('/api/test/epay/create-order', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(params)
+                });
+
+                const result = await signResponse.json();
+                const resultDiv = document.getElementById('epayCreateOrderResult');
+                const resultContent = document.getElementById('epayCreateOrderResultContent');
+                
+                resultDiv.style.display = 'block';
+                resultContent.textContent = JSON.stringify(result, null, 2);
+                
+                if (result.success) {
+                    showAlert('✅ 易支付创建订单测试成功', 'success');
+                } else {
+                    showAlert('❌ 易支付创建订单测试失败: ' + (result.message || result.data?.msg || '未知错误'), 'error');
+                }
+            } catch (error) {
+                const resultDiv = document.getElementById('epayCreateOrderResult');
+                const resultContent = document.getElementById('epayCreateOrderResultContent');
+                resultDiv.style.display = 'block';
+                resultContent.textContent = '错误: ' + error.message;
+                showAlert('❌ 测试失败: ' + error.message, 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // 测试易支付提交订单
+        async function testEpaySubmitOrder() {
+            setLoading(true);
+            try {
+                // 获取配置中的商户ID和密钥
+                const configResponse = await fetch('/api/config', {
+                    credentials: 'include'
+                });
+                if (!configResponse.ok) {
+                    throw new Error('无法获取配置信息');
+                }
+                const config = await configResponse.json();
+
+                if (!config.epay || !config.epay.pid || !config.epay.key) {
+                    throw new Error('请先配置易支付的商户ID和密钥');
+                }
+
+                // 构建测试参数
+                const params = {
+                    pid: config.epay.pid,
+                    out_trade_no: document.getElementById('epayTestOutTradeNoSubmit').value.trim() || 'TEST_ORDER_' + Date.now(),
+                    type: document.getElementById('epayTestTypeSubmit').value,
+                    money: document.getElementById('epayTestMoneySubmit').value.trim() || '0.01',
+                    name: document.getElementById('epayTestNameSubmit').value.trim() || '测试商品',
+                    notify_url: document.getElementById('epayTestNotifyUrlSubmit').value.trim() || '',
+                    return_url: document.getElementById('epayTestReturnUrlSubmit').value.trim() || '',
+                    timestamp: Math.floor(Date.now() / 1000) // 当前时间戳（秒）
+                };
+
+                const signResponse = await fetch('/api/test/epay/submit-order', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(params)
+                });
+
+                const result = await signResponse.json();
+                const resultDiv = document.getElementById('epaySubmitOrderResult');
+                const resultContent = document.getElementById('epaySubmitOrderResultContent');
+                
+                resultDiv.style.display = 'block';
+                
+                // 如果返回的是 HTML 表单，直接显示 HTML
+                if (result.data && result.data.form) {
+                    resultContent.innerHTML = '<div style="margin-bottom: 10px;"><strong>返回类型：</strong>支付表单HTML</div>' +
+                        '<div style="border: 1px solid #ddd; padding: 10px; background: white; margin-bottom: 10px;">' +
+                        result.data.form +
+                        '</div>' +
+                        '<details><summary style="cursor: pointer; color: #2196F3;">查看完整响应 JSON</summary>' +
+                        '<pre style="margin-top: 10px;">' + JSON.stringify(result, null, 2) + '</pre></details>';
+                } else {
+                    resultContent.innerHTML = '<pre>' + JSON.stringify(result, null, 2) + '</pre>';
+                }
+                
+                if (result.success) {
+                    showAlert('✅ 易支付提交订单测试成功', 'success');
+                } else {
+                    showAlert('❌ 易支付提交订单测试失败: ' + (result.message || result.data?.msg || '未知错误'), 'error');
+                }
+            } catch (error) {
+                const resultDiv = document.getElementById('epaySubmitOrderResult');
+                const resultContent = document.getElementById('epaySubmitOrderResultContent');
+                resultDiv.style.display = 'block';
+                resultContent.innerHTML = '<pre>错误: ' + error.message + '</pre>';
+                showAlert('❌ 测试失败: ' + error.message, 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // 测试易支付查询订单
+        async function testEpayQueryOrder() {
+            setLoading(true);
+            try {
+                // 获取配置
+                const configResponse = await fetch('/api/config', {
+                    credentials: 'include'
+                });
+                if (!configResponse.ok) {
+                    throw new Error('无法获取配置信息');
+                }
+                const config = await configResponse.json();
+
+                if (!config.epay || !config.epay.pid || !config.epay.key) {
+                    throw new Error('请先配置易支付的商户ID和密钥');
+                }
+
+                const params = {
+                    pid: config.epay.pid,
+                    key: config.epay.key,
+                    out_trade_no: document.getElementById('epayTestOutTradeNoQuery').value.trim() || '',
+                    trade_no: document.getElementById('epayTestTradeNoQuery').value.trim() || ''
+                };
+
+                if (!params.out_trade_no && !params.trade_no) {
+                    showAlert('❌ 请至少填写商户订单号或平台订单号', 'error');
+                    setLoading(false);
+                    return;
+                }
+
+                const response = await fetch('/api/test/epay/query-order', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(params)
+                });
+
+                const result = await response.json();
+                const resultDiv = document.getElementById('epayQueryOrderResult');
+                const resultContent = document.getElementById('epayQueryOrderResultContent');
+                
+                resultDiv.style.display = 'block';
+                resultContent.textContent = JSON.stringify(result, null, 2);
+                
+                if (result.success) {
+                    showAlert('✅ 易支付查询订单测试成功', 'success');
+                } else {
+                    showAlert('❌ 易支付查询订单测试失败: ' + (result.message || result.data?.msg || '未知错误'), 'error');
+                }
+            } catch (error) {
+                const resultDiv = document.getElementById('epayQueryOrderResult');
+                const resultContent = document.getElementById('epayQueryOrderResultContent');
+                resultDiv.style.display = 'block';
+                resultContent.textContent = '错误: ' + error.message;
+                showAlert('❌ 测试失败: ' + error.message, 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // 测试易支付退款
+        async function testEpayRefund() {
+            setLoading(true);
+            try {
+                // 获取配置
+                const configResponse = await fetch('/api/config', {
+                    credentials: 'include'
+                });
+                if (!configResponse.ok) {
+                    throw new Error('无法获取配置信息');
+                }
+                const config = await configResponse.json();
+
+                if (!config.epay || !config.epay.pid || !config.epay.key) {
+                    throw new Error('请先配置易支付的商户ID和密钥');
+                }
+
+                const params = {
+                    pid: config.epay.pid,
+                    key: config.epay.key,
+                    out_trade_no: document.getElementById('epayTestOutTradeNoRefund').value.trim() || '',
+                    trade_no: document.getElementById('epayTestTradeNoRefund').value.trim() || '',
+                    money: document.getElementById('epayTestRefundMoney').value.trim() || '0.01'
+                };
+
+                if (!params.out_trade_no && !params.trade_no) {
+                    showAlert('❌ 请至少填写商户订单号或平台订单号', 'error');
+                    setLoading(false);
+                    return;
+                }
+
+                const response = await fetch('/api/test/epay/refund', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(params)
+                });
+
+                const result = await response.json();
+                const resultDiv = document.getElementById('epayRefundResult');
+                const resultContent = document.getElementById('epayRefundResultContent');
+                
+                resultDiv.style.display = 'block';
+                resultContent.textContent = JSON.stringify(result, null, 2);
+                
+                if (result.success) {
+                    showAlert('✅ 易支付退款测试成功', 'success');
+                } else {
+                    showAlert('❌ 易支付退款测试失败: ' + (result.message || result.data?.msg || '未知错误'), 'error');
+                }
+            } catch (error) {
+                const resultDiv = document.getElementById('epayRefundResult');
+                const resultContent = document.getElementById('epayRefundResultContent');
+                resultDiv.style.display = 'block';
+                resultContent.textContent = '错误: ' + error.message;
+                showAlert('❌ 测试失败: ' + error.message, 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // 页面加载时检查登录状态
+        window.addEventListener('DOMContentLoaded', function() {
+            checkAuthStatus();
+            initPaymentTypeDefaults();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: GitHub Discussions
+    url: https://github.com/kitfoxai/kitfoxpay/discussions
+    about: 请在这里提问和讨论
+  - name: Gitee Issues
+    url: https://gitee.com/kitfoxai/kitfoxpay/issues
+    about: 国内用户可以使用 Gitee Issues
