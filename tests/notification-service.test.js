@@ -132,3 +132,33 @@ test('failed forward is persisted and can be retried later', async () => {
   assert.equal(saved.status, 'delivered');
   assert.equal(saved.attemptCount, 2);
 });
+
+test('downstream body fail is treated as failed delivery and scheduled for retry', async () => {
+  const tempDir = makeTempDir();
+  const store = new FileNotificationStore({
+    filePath: path.join(tempDir, 'notifications.json'),
+  });
+  await store.init();
+
+  const service = new NotificationService({
+    store,
+    now: () => 1700000000000,
+    retryDelaysMs: [1000],
+    forwarder: async () => {
+      throw new Error('downstream notify unexpected body: fail');
+    },
+  });
+
+  const result = await service.handleIncomingNotification({
+    kind: 'payment',
+    providerEventId: 'pay_fail_body',
+    merchantOrderNo: 'mch_fail_body',
+    notifyUrl: 'https://merchant.example/notify',
+    payload: { payOrderId: 'pay_fail_body' },
+    forwardPayload: { out_trade_no: 'mch_fail_body', trade_status: 'TRADE_SUCCESS' },
+  });
+
+  assert.equal(result.notification.status, 'pending_retry');
+  assert.equal(result.notification.attemptCount, 1);
+  assert.match(result.notification.lastError, /unexpected body: fail/);
+});

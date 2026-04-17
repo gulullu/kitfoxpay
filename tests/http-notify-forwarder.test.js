@@ -50,3 +50,32 @@ test('http notify forwarder throws when downstream returns non-2xx', async () =>
     /unexpected status: 500/
   );
 });
+
+test('http notify forwarder throws when downstream body is not success', async () => {
+  const forward = createHttpNotifyForwarder({
+    httpClient: {
+      get: async () => ({ status: 200, data: 'fail' }),
+    },
+  });
+
+  await assert.rejects(
+    () => forward({ notifyUrl: 'https://merchant.example/notify', forwardPayload: { a: 1 } }),
+    /unexpected body: fail/
+  );
+});
+
+test('http notify forwarder accepts downstream success body with surrounding whitespace', async () => {
+  const forward = createHttpNotifyForwarder({
+    httpClient: {
+      get: async () => ({ status: 200, data: '  success\n' }),
+    },
+  });
+
+  const result = await forward({
+    notifyUrl: 'https://merchant.example/notify',
+    forwardPayload: { a: 1 },
+  });
+
+  assert.equal(result.status, 200);
+  assert.equal(result.body, '  success\n');
+});
