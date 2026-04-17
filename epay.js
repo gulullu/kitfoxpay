@@ -148,13 +148,13 @@ class EpayAdapter {
     if (type === 'alipay') {
       if (authCode) return 'ALI_BAR';
       if (buyerUserId) return device === 'lite' ? 'ALI_LITE' : 'ALI_JSAPI';
-      return 'WEB_CASHIER';
+      return 'ALI_QR';
     }
 
     if (type === 'wxpay') {
       if (authCode) return 'WX_BAR';
       if (openid) return device === 'lite' ? 'WX_LITE' : 'WX_JSAPI';
-      return 'WEB_CASHIER';
+      return 'QR_CASHIER';
     }
 
     return this._mapPayType(epayParams.type);
