@@ -9,7 +9,7 @@ module.exports = {
     baseUrl: 'https://pay.jeepay.vip',   // Jeepay API 基础地址
     mchNo: '你的商户号',                   // 商户号
     appId: '你的应用ID',                  // 应用ID
-    privateKey: '你的商户私钥'            // 商户私钥（用于签名/验签）
+    apiKey: '你的 API Key（商户应用密钥）' // 用 jeepay/new-api 同款 MD5 key 规则签名
   },
 
   // ========== 易支付接口配置（适配器） ==========

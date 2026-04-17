@@ -53,7 +53,7 @@ const jeepay = new JeepayClient({
   baseUrl: config.jeepay.baseUrl,
   mchNo: config.jeepay.mchNo,
   appId: config.jeepay.appId,
-  privateKey: config.jeepay.privateKey
+  apiKey: config.jeepay.apiKey || config.jeepay.privateKey
 });
 
 // 初始化 Jeepay API 路由（注入客户端实例）

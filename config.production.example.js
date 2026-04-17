@@ -18,10 +18,8 @@ module.exports = {
     // Jeepay 应用 ID
     appId: 'REPLACE_WITH_JEEPAY_APP_ID',
 
-    // Jeepay 商户私钥（支持多行 PEM）
-    privateKey: `-----BEGIN PRIVATE KEY-----
-REPLACE_WITH_YOUR_PRIVATE_KEY
------END PRIVATE KEY-----`
+    // Jeepay 商户应用 API Key（按 jeequan/new-api 的商户应用签名方式）
+    apiKey: 'REPLACE_WITH_JEEPAY_API_KEY'
   },
 
   epay: {

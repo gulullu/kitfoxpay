@@ -20,9 +20,33 @@ class JeepayClient {
     this.baseUrl = config.baseUrl || 'https://pay.jeepay.vip';
     this.mchNo = config.mchNo;
     this.appId = config.appId;
-    this.privateKey = config.privateKey;
+    this.apiKey = config.apiKey || config.privateKey;
     this.version = '1.0';
     this.signType = 'MD5';
+  }
+
+  valueToString(value) {
+    if (value === null || value === undefined) {
+      return '';
+    }
+
+    if (typeof value === 'string') {
+      return value;
+    }
+
+    if (typeof value === 'number') {
+      return Number.isInteger(value) ? String(value) : String(Math.trunc(value));
+    }
+
+    if (typeof value === 'boolean') {
+      return value ? 'true' : 'false';
+    }
+
+    if (typeof value === 'object') {
+      return JSON.stringify(value);
+    }
+
+    return String(value);
   }
 
   /**
@@ -34,7 +58,7 @@ class JeepayClient {
    * @returns {string} 返回大写的 MD5 签名值
    */
   generateSign(params, privateKey) {
-    const signKey = privateKey || this.privateKey;
+    const signKey = privateKey || this.apiKey;
     
     // 第一步：筛选非空参数并按参数名ASCII码从小到大排序（字典序）
     // 根据文档：参数名ASCII码从小到大排序，如果参数的值为空不参与签名
@@ -45,31 +69,14 @@ class JeepayClient {
         if (key === 'sign') {
           return false;
         }
-        // 只保留非空值（null、undefined、空字符串都不参与签名）
-        const value = params[key];
-        if (value === null || value === undefined || value === '') {
-          return false;
-        }
-        return true;
+        const stringValue = this.valueToString(params[key]);
+        return stringValue !== '';
       })
       .sort(); // 按ASCII码排序（字典序）
 
     // 构建排序后的参数对象，确保所有值都转换为字符串
     keys.forEach(key => {
-      const value = params[key];
-      // 根据Jeepay文档，所有值都转为字符串
-      // 数字直接转字符串，对象转JSON字符串，字符串保持原样
-      if (typeof value === 'number') {
-        filteredParams[key] = String(value);
-      } else if (typeof value === 'boolean') {
-        filteredParams[key] = String(value);
-      } else if (typeof value === 'object' && value !== null) {
-        // 对象或数组转为JSON字符串
-        filteredParams[key] = JSON.stringify(value);
-      } else {
-        // 字符串类型直接使用
-        filteredParams[key] = String(value);
-      }
+      filteredParams[key] = this.valueToString(params[key]);
     });
 
     // 使用URL键值对格式拼接成字符串 stringA
@@ -221,7 +228,45 @@ class JeepayClient {
 
     const url = `${this.baseUrl}/api/pay/unifiedOrder`;
     const response = await this.request(url, params);
-    return response.data;
+    return this.normalizeUnifiedOrderData(response.data);
+  }
+
+  extractPaymentUrl(data) {
+    if (!data || typeof data !== 'object') {
+      throw new Error('Jeepay 返回缺少支付数据');
+    }
+
+    for (const key of ['payUrl', 'payData', 'cashierUrl', 'codeUrl']) {
+      if (typeof data[key] === 'string' && data[key].trim()) {
+        return data[key].trim();
+      }
+    }
+
+    if (data.payData && typeof data.payData === 'object') {
+      for (const key of ['codeUrl', 'payUrl', 'cashierUrl', 'codeImgUrl', 'formUrl', 'content']) {
+        const value = data.payData[key];
+        if (typeof value === 'string' && value.trim()) {
+          return value.trim();
+        }
+      }
+    }
+
+    throw new Error('Jeepay 返回里未找到可用支付链接');
+  }
+
+  normalizeUnifiedOrderData(data) {
+    const normalized = { ...(data || {}) };
+
+    try {
+      const paymentUrl = this.extractPaymentUrl(normalized);
+      if (!normalized.payUrl) {
+        normalized.payUrl = paymentUrl;
+      }
+    } catch (_error) {
+      // 保留原始返回，交由上层决定是否直接报错
+    }
+
+    return normalized;
   }
 
   /**

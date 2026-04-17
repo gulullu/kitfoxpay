@@ -164,7 +164,7 @@ configRouter.put('/', requireAuth, (req, res) => {
     const newConfig = req.body;
 
     // 验证必填字段
-    if (!newConfig.jeepay || !newConfig.jeepay.baseUrl || !newConfig.jeepay.mchNo || !newConfig.jeepay.appId || !newConfig.jeepay.privateKey) {
+    if (!newConfig.jeepay || !newConfig.jeepay.baseUrl || !newConfig.jeepay.mchNo || !newConfig.jeepay.appId || !(newConfig.jeepay.apiKey || newConfig.jeepay.privateKey)) {
       return res.status(400).json({ 
         error: '参数不完整', 
         message: 'Jeepay 配置项不能为空' 
@@ -206,6 +206,8 @@ configRouter.put('/', requireAuth, (req, res) => {
     const currentConfig = loadConfig();
     const adminPassword = newConfig.admin?.password || currentConfig.admin?.password || 'admin123';
 
+    const jeepayApiKey = newConfig.jeepay.apiKey || newConfig.jeepay.privateKey;
+
     // 构建配置文件内容
     const configContent = `/**
  * 支付平台配置文件
@@ -229,8 +231,8 @@ module.exports = {
     // 应用ID
     appId: '${escapeSingleQuote(newConfig.jeepay.appId)}',
     
-    // 商户私钥（用于签名和验签）
-    privateKey: \`${escapeTemplateString(newConfig.jeepay.privateKey)}\`
+    // 商户应用 API Key（按 jeequan/new-api 的商户应用签名方式）
+    apiKey: '${escapeSingleQuote(jeepayApiKey)}'
   },
 
   // ========== 易支付接口配置 ==========

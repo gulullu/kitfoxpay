@@ -11,7 +11,7 @@ const jeepay = new JeepayClient({
   baseUrl: config.jeepay.baseUrl,
   mchNo: config.jeepay.mchNo,
   appId: config.jeepay.appId,
-  privateKey: config.jeepay.privateKey
+  apiKey: config.jeepay.apiKey || config.jeepay.privateKey
 });
 
 // 测试参数（根据实际请求参数修改）
@@ -31,12 +31,14 @@ const testParams = {
   signType: 'MD5'
 };
 
+const signKey = config.jeepay.apiKey || config.jeepay.privateKey || '';
+
 console.log('=== 测试签名生成 ===');
 console.log('配置信息:');
 console.log('  - Base URL:', config.jeepay.baseUrl);
 console.log('  - 商户号:', config.jeepay.mchNo);
 console.log('  - 应用ID:', config.jeepay.appId);
-console.log('  - 私钥长度:', config.jeepay.privateKey.length);
+console.log('  - API Key 长度:', signKey.length);
 console.log('\n测试参数:');
 console.log(JSON.stringify(testParams, null, 2));
 
@@ -69,7 +71,7 @@ sortedKeys.forEach(k => {
 });
 
 const stringA = sortedKeys.map(k => `${k}=${filtered[k]}`).join('&');
-const stringSignTemp = `${stringA}&key=${config.jeepay.privateKey}`;
+const stringSignTemp = `${stringA}&key=${signKey}`;
 
 console.log('待签名字符串 (stringA):');
 console.log(stringA);
