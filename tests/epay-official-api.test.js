@@ -122,13 +122,14 @@ test('maps official Jeepay way codes back to generic epay types', () => {
   assert.equal(adapter._mapWayCodeToEpayType('WX_LITE'), 'wxpay');
 });
 
-test('maps alipay mobile device to ALI_QR for submit flow', async () => {
+test('renders alipay launch page for mobile submit flow and redirects to return_url after success polling', async () => {
   const calls = [];
+  const payUrl = 'https://qr.alipay.com/bax000000example';
   const adapter = createAdapter({
     jeepayClient: {
       unifiedOrder: async (params) => {
         calls.push(params);
-        return { payOrderId: 'P_3', payData: 'https://pay.example.com/wap' };
+        return { payOrderId: 'P_3', payData: payUrl };
       },
     },
   });
@@ -141,21 +142,28 @@ test('maps alipay mobile device to ALI_QR for submit flow', async () => {
     money: '6.66',
     name: 'wap-test',
     notify_url: 'https://merchant.example/notify',
+    return_url: 'https://merchant.example/return?order=ORDER_3',
   });
 
   assert.equal(result.code, 1);
   assert.equal(calls.length, 1);
   assert.equal(calls[0].wayCode, 'ALI_QR');
   assert.deepEqual(JSON.parse(calls[0].channelExtra), { payDataType: 'codeUrl' });
+  assert.match(result.data.form, /打开支付宝/);
+  assert.match(result.data.form, /\/api\/payment\/status\?out_trade_no=ORDER_3/);
+  assert.match(result.data.form, /https:\/\/merchant\.example\/return\?order=ORDER_3/);
+  assert.match(result.data.form, /window\.location\.href/);
+  assert.doesNotMatch(result.data.form, /meta http-equiv="refresh"/i);
 });
 
-test('maps generic pc browser flow to ALI_QR for submit flow', async () => {
+test('renders alipay qr page for pc submit flow and redirects to return_url after success polling', async () => {
   const calls = [];
+  const payUrl = 'https://qr.alipay.com/bax111111example';
   const adapter = createAdapter({
     jeepayClient: {
       unifiedOrder: async (params) => {
         calls.push(params);
-        return { payOrderId: 'P_4', payData: 'https://pay.example.com/pc' };
+        return { payOrderId: 'P_4', payData: payUrl };
       },
     },
   });
@@ -168,12 +176,19 @@ test('maps generic pc browser flow to ALI_QR for submit flow', async () => {
     money: '9.99',
     name: 'pc-test',
     notify_url: 'https://merchant.example/notify',
+    return_url: 'https://merchant.example/return?order=ORDER_4',
   });
 
   assert.equal(result.code, 1);
   assert.equal(calls.length, 1);
   assert.equal(calls[0].wayCode, 'ALI_QR');
   assert.deepEqual(JSON.parse(calls[0].channelExtra), { payDataType: 'codeUrl' });
+  assert.match(result.data.form, /请使用支付宝扫码支付/);
+  assert.match(result.data.form, /qr\.alipay\.com\/bax111111example/);
+  assert.match(result.data.form, /\/api\/payment\/status\?out_trade_no=ORDER_4/);
+  assert.match(result.data.form, /https:\/\/merchant\.example\/return\?order=ORDER_4/);
+  assert.match(result.data.form, /window\.location\.href/);
+  assert.doesNotMatch(result.data.form, /meta http-equiv="refresh"/i);
 });
 
 test('renders qr image page for wxpay submit flow and redirects to return_url after success polling', async () => {

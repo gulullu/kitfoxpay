@@ -420,16 +420,65 @@ class EpayAdapter {
     return normalized.includes('/api/scan/imgs/') || normalized.endsWith('.png');
   }
 
+  _isAlipayQrUrl(payUrl) {
+    const normalized = String(payUrl || '').trim().toLowerCase();
+    if (!normalized) {
+      return false;
+    }
+    return normalized.includes('qr.alipay.com/');
+  }
+
+  _buildPaymentStatusScript(statusUrl, returnUrl) {
+    return `<script>
+    (function () {
+      const statusUrl = ${JSON.stringify(statusUrl)};
+      const returnUrl = ${JSON.stringify(returnUrl)};
+      const statusNode = document.getElementById('pay-status');
+      let redirected = false;
+
+      async function pollStatus() {
+        if (redirected || !statusUrl) {
+          return;
+        }
+        try {
+          const response = await fetch(statusUrl, { credentials: 'same-origin', cache: 'no-store' });
+          const data = await response.json();
+          if (data && data.paid) {
+            redirected = true;
+            if (statusNode) {
+              statusNode.textContent = '支付成功，正在返回...';
+            }
+            if (returnUrl) {
+              window.location.href = returnUrl;
+              return;
+            }
+          }
+        } catch (_error) {
+          if (statusNode) {
+            statusNode.textContent = '支付状态检查中，完成后将自动返回。';
+          }
+        }
+      }
+
+      pollStatus();
+      setInterval(pollStatus, 3000);
+    })();
+  </script>`;
+  }
+
   _generatePayForm(payUrl, params) {
     // 如果支付URL为空，返回空字符串
     if (!payUrl) {
       return '';
     }
 
+    const outTradeNo = encodeURIComponent(params.out_trade_no || '');
+    const returnUrl = params.return_url || '';
+    const statusUrl = `/api/payment/status?out_trade_no=${outTradeNo}`;
+    const device = this._normalizeDevice(params.device);
+    const type = String(params.type || '').trim().toLowerCase();
+
     if (this._isQrImageUrl(payUrl)) {
-      const outTradeNo = encodeURIComponent(params.out_trade_no || '');
-      const returnUrl = params.return_url || '';
-      const statusUrl = `/api/payment/status?out_trade_no=${outTradeNo}`;
       return `<!DOCTYPE html>
 <html>
 <head>
@@ -482,41 +531,153 @@ class EpayAdapter {
     <div><a href="${payUrl}" class="link" target="_blank" rel="noopener noreferrer">打开二维码原图</a></div>
     <div class="status" id="pay-status">正在等待支付完成...</div>
   </div>
+  ${this._buildPaymentStatusScript(statusUrl, returnUrl)}
+</body>
+</html>`;
+    }
+
+    if (type === 'alipay' && this._isAlipayQrUrl(payUrl)) {
+      if (device === 'pc') {
+        return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>请扫码完成支付宝支付</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 24px;
+      background: #f5f5f5;
+      color: #222;
+    }
+    .container {
+      background: white;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      max-width: 420px;
+      margin: 0 auto;
+    }
+    #alipay-qr {
+      width: 256px;
+      height: 256px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .link {
+      display: inline-block;
+      margin-top: 16px;
+      padding: 10px 18px;
+      background: #1677ff;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+    }
+    .status {
+      margin-top: 14px;
+      color: #666;
+      font-size: 14px;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h2>请使用支付宝扫码支付</h2>
+    <p>支付完成后会自动返回。</p>
+    <div id="alipay-qr"></div>
+    <div><a href="${payUrl}" class="link" target="_blank" rel="noopener noreferrer">打开支付宝付款链接</a></div>
+    <div class="status" id="pay-status">正在等待支付完成...</div>
+  </div>
   <script>
     (function () {
-      const statusUrl = ${JSON.stringify(statusUrl)};
-      const returnUrl = ${JSON.stringify(returnUrl)};
-      const statusNode = document.getElementById('pay-status');
-      let redirected = false;
-
-      async function pollStatus() {
-        if (redirected || !statusUrl) {
-          return;
-        }
-        try {
-          const response = await fetch(statusUrl, { credentials: 'same-origin', cache: 'no-store' });
-          const data = await response.json();
-          if (data && data.paid) {
-            redirected = true;
-            if (statusNode) {
-              statusNode.textContent = '支付成功，正在返回...';
-            }
-            if (returnUrl) {
-              window.location.href = returnUrl;
-              return;
-            }
-          }
-        } catch (_error) {
-          if (statusNode) {
-            statusNode.textContent = '支付状态检查中，完成后将自动返回。';
-          }
-        }
+      const qrNode = document.getElementById('alipay-qr');
+      if (qrNode && typeof QRCode !== 'undefined') {
+        new QRCode(qrNode, {
+          text: ${JSON.stringify(payUrl)},
+          width: 256,
+          height: 256,
+        });
+      } else if (qrNode) {
+        qrNode.innerHTML = '<p><a href="${payUrl}" class="link" target="_blank" rel="noopener noreferrer">点击打开支付宝付款链接</a></p>';
       }
-
-      pollStatus();
-      setInterval(pollStatus, 3000);
     })();
   </script>
+  ${this._buildPaymentStatusScript(statusUrl, returnUrl)}
+</body>
+</html>`;
+      }
+
+      return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>请在支付宝中完成支付</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 24px;
+      background: #f5f5f5;
+      color: #222;
+    }
+    .container {
+      background: white;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      max-width: 420px;
+      margin: 0 auto;
+    }
+    .btn {
+      display: inline-block;
+      margin-top: 16px;
+      padding: 12px 18px;
+      background: #1677ff;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: bold;
+    }
+    .status {
+      margin-top: 14px;
+      color: #666;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>请在支付宝中完成支付</h2>
+    <p>若未自动拉起，请点击下方按钮打开支付宝。支付完成后会自动返回。</p>
+    <div><a href="${payUrl}" id="open-alipay" class="btn">打开支付宝</a></div>
+    <div class="status" id="pay-status">正在等待支付完成...</div>
+  </div>
+  <script>
+    (function () {
+      let opened = false;
+      const openLink = document.getElementById('open-alipay');
+      function openAlipay() {
+        if (opened) {
+          return;
+        }
+        opened = true;
+        window.location.href = ${JSON.stringify(payUrl)};
+      }
+      if (openLink) {
+        openLink.addEventListener('click', function () {
+          openAlipay();
+        });
+      }
+      setTimeout(openAlipay, 300);
+    })();
+  </script>
+  ${this._buildPaymentStatusScript(statusUrl, returnUrl)}
 </body>
 </html>`;
     }
