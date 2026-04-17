@@ -412,10 +412,69 @@ class EpayAdapter {
    * @param {Object} params - 订单参数
    * @returns {string} 表单HTML
    */
+  _isQrImageUrl(payUrl) {
+    const normalized = String(payUrl || '').trim().toLowerCase();
+    if (!normalized) {
+      return false;
+    }
+    return normalized.includes('/api/scan/imgs/') || normalized.endsWith('.png');
+  }
+
   _generatePayForm(payUrl, params) {
     // 如果支付URL为空，返回空字符串
     if (!payUrl) {
       return '';
+    }
+
+    if (this._isQrImageUrl(payUrl)) {
+      return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>请扫码完成微信支付</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 24px;
+      background: #f5f5f5;
+      color: #222;
+    }
+    .container {
+      background: white;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      max-width: 420px;
+      margin: 0 auto;
+    }
+    .qr {
+      width: min(100%, 320px);
+      height: auto;
+      border-radius: 8px;
+      background: white;
+    }
+    .link {
+      display: inline-block;
+      margin-top: 16px;
+      padding: 10px 18px;
+      background: #07C160;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>请使用微信扫码支付</h2>
+    <p>二维码已自动拉起，若未显示请刷新页面。</p>
+    <img class="qr" src="${payUrl}" alt="微信支付二维码" />
+    <div><a href="${payUrl}" class="link" target="_blank" rel="noopener noreferrer">打开二维码原图</a></div>
+  </div>
+</body>
+</html>`;
     }
 
     // 生成自动跳转的HTML页面
