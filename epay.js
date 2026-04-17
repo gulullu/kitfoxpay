@@ -23,19 +23,61 @@ class EpayAdapter {
   }
 
   /**
-   * 支付方式映射：易支付 type -> Jeepay wayCode
+   * 支付方式映射：易支付 type -> Jeepay 官方 wayCode
    */
   _mapPayType(epayType) {
-    // 不再转换，直接透传
-    return epayType;
+    const normalized = String(epayType || '').trim();
+    const upper = normalized.toUpperCase();
+
+    const typeMap = {
+      alipay: 'ALI_PC',
+      alipay_pc: 'ALI_PC',
+      alipay_wap: 'ALI_WAP',
+      alipay_qr: 'ALI_QR',
+      alipay_bar: 'ALI_BAR',
+      alipay_jsapi: 'ALI_JSAPI',
+      alipay_lite: 'ALI_LITE',
+      alipay_app: 'ALI_APP',
+      wxpay: 'WX_NATIVE',
+      wxpay_native: 'WX_NATIVE',
+      wxpay_h5: 'WX_H5',
+      wxpay_jsapi: 'WX_JSAPI',
+      wxpay_lite: 'WX_LITE',
+      wxpay_bar: 'WX_BAR',
+      wxpay_app: 'WX_APP'
+    };
+
+    if (typeMap[normalized]) {
+      return typeMap[normalized];
+    }
+
+    // 已经是官方 wayCode 时直接透传
+    if (/^[A-Z0-9_]+$/.test(upper)) {
+      return upper;
+    }
+
+    return normalized;
   }
 
   /**
-   * 支付方式反向映射：Jeepay wayCode -> 易支付 type
+   * 支付方式反向映射：Jeepay 官方 wayCode -> 易支付 type
    */
   _mapWayCodeToEpayType(wayCode) {
-    // 不再转换，直接透传
-    return wayCode || '';
+    const normalized = String(wayCode || '').trim().toUpperCase();
+
+    if (!normalized) {
+      return '';
+    }
+
+    if (normalized.startsWith('ALI_')) {
+      return 'alipay';
+    }
+
+    if (normalized.startsWith('WX_')) {
+      return 'wxpay';
+    }
+
+    return normalized;
   }
 
   /**

@@ -9,6 +9,7 @@ const { loadConfig, getConfigPath, getExamplePath } = require('./lib/config-load
 const { FileNotificationStore } = require('./lib/notification-store');
 const { NotificationService } = require('./lib/notification-service');
 const { createHttpNotifyForwarder } = require('./lib/http-notify-forwarder');
+const { createRequestLogger } = require('./lib/request-logger');
 const {
   createPaymentNotifyHandler,
   createRefundNotifyHandler,
@@ -72,6 +73,8 @@ const logger = {
     console.error(`[kitfoxpay] ${message}`, meta || '');
   },
 };
+
+app.use(createRequestLogger({ logger }));
 
 const notificationStore = new FileNotificationStore({
   filePath: path.join(__dirname, 'data', 'notifications.json'),
