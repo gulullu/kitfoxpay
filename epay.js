@@ -80,6 +80,88 @@ class EpayAdapter {
     return normalized;
   }
 
+  _normalizeDevice(device) {
+    return String(device || '').trim().toLowerCase();
+  }
+
+  _getPreferredPayDataType(epayParams) {
+    const wayCode = this._mapPayType(epayParams.type);
+    const device = this._normalizeDevice(epayParams.device);
+
+    if (epayParams.payDataType) {
+      return epayParams.payDataType;
+    }
+
+    if (wayCode === 'ALI_WAP') {
+      return 'form';
+    }
+
+    if (wayCode === 'ALI_PC') {
+      return 'form';
+    }
+
+    if (wayCode === 'ALI_QR' || wayCode === 'WX_NATIVE') {
+      return device === 'image' ? 'codeImgUrl' : 'codeUrl';
+    }
+
+    return '';
+  }
+
+  _buildChannelExtra(epayParams, wayCode) {
+    const extras = {};
+    const authCode = epayParams.authCode || epayParams.auth_code || '';
+    const openid = epayParams.openid || epayParams.openId || '';
+    const buyerUserId = epayParams.buyerUserId || epayParams.buyer_user_id || '';
+    const subAppId = epayParams.subAppId || epayParams.sub_app_id || '';
+    const payDataType = epayParams.payDataType || this._getPreferredPayDataType({ ...epayParams, type: wayCode });
+
+    if (authCode && ['AUTO_BAR', 'ALI_BAR', 'WX_BAR', 'YSF_BAR'].includes(wayCode)) {
+      extras.authCode = authCode;
+    }
+
+    if (buyerUserId && ['ALI_JSAPI', 'ALI_LITE'].includes(wayCode)) {
+      extras.buyerUserId = buyerUserId;
+    }
+
+    if (openid && ['WX_JSAPI', 'WX_LITE'].includes(wayCode)) {
+      extras.openid = openid;
+    }
+
+    if (subAppId && ['WX_JSAPI', 'WX_LITE', 'ALI_BAR', 'WX_BAR', 'YSF_BAR'].includes(wayCode)) {
+      extras.subAppId = subAppId;
+    }
+
+    if (payDataType && ['ALI_WAP', 'ALI_PC', 'ALI_QR', 'WX_NATIVE', 'QR_CASHIER'].includes(wayCode)) {
+      extras.payDataType = payDataType;
+    }
+
+    return Object.keys(extras).length > 0 ? JSON.stringify(extras) : '';
+  }
+
+  _resolveWayCode(epayParams) {
+    const type = String(epayParams.type || '').trim().toLowerCase();
+    const device = this._normalizeDevice(epayParams.device);
+    const authCode = epayParams.authCode || epayParams.auth_code || '';
+    const openid = epayParams.openid || epayParams.openId || '';
+    const buyerUserId = epayParams.buyerUserId || epayParams.buyer_user_id || '';
+
+    if (type === 'alipay') {
+      if (authCode) return 'ALI_BAR';
+      if (buyerUserId) return device === 'lite' ? 'ALI_LITE' : 'ALI_JSAPI';
+      if (['wap', 'h5', 'mobile'].includes(device)) return 'ALI_WAP';
+      return 'ALI_PC';
+    }
+
+    if (type === 'wxpay') {
+      if (authCode) return 'WX_BAR';
+      if (openid) return device === 'lite' ? 'WX_LITE' : 'WX_JSAPI';
+      if (['wap', 'h5', 'mobile'].includes(device)) return 'WX_H5';
+      return 'WX_NATIVE';
+    }
+
+    return this._mapPayType(epayParams.type);
+  }
+
   /**
    * 转换支付状态：Jeepay state -> 易支付 status
    * @param {string|number} state - Jeepay 状态：'0'-订单生成, '1'-支付中, '2'-支付成功, '3'-支付失败, '4'-已撤销, '5'-已退款, '6'-订单关闭
@@ -136,8 +218,8 @@ class EpayAdapter {
     }
 
     try {
-      // 转换支付方式
-      const wayCode = this._mapPayType(epayParams.type);
+      const wayCode = this._resolveWayCode(epayParams);
+      const channelExtra = this._buildChannelExtra(epayParams, wayCode);
 
       // 金额转换：元 -> 分
       const amount = Math.round(parseFloat(epayParams.money) * 100);
@@ -163,14 +245,16 @@ class EpayAdapter {
       // notifyUrl 设置为我们的通知接口，用于接收 Jeepay 的通知
       const jeepayParams = {
         mchOrderNo: epayParams.out_trade_no,
-        wayCode: wayCode,
-        amount: amount,
+        wayCode,
+        amount,
+        currency: epayParams.currency || 'cny',
         subject: epayParams.name,
-        body: epayParams.name, // 易支付 只有 name，用 name 作为 body
+        body: epayParams.body || epayParams.name, // 易支付 只有 name 时用 name 兜底
         notifyUrl: `${this.serverHost}/api/payment/notify`, // 使用我们的通知接口
         returnUrl: epayParams.return_url || '',
-        clientIp: epayParams.clientip || '',
-        extParam: extParam
+        clientIp: epayParams.clientip || epayParams.clientIp || '',
+        channelExtra,
+        extParam,
       };
 
       // 调用 Jeepay 统一下单接口

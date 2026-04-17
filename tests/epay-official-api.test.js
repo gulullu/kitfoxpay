@@ -85,3 +85,138 @@ test('maps official Jeepay way codes back to generic epay types', () => {
   assert.equal(adapter._mapWayCodeToEpayType('WX_JSAPI'), 'wxpay');
   assert.equal(adapter._mapWayCodeToEpayType('WX_LITE'), 'wxpay');
 });
+
+test('maps alipay mobile device to ALI_WAP and requests form payDataType for submit flow', async () => {
+  const calls = [];
+  const adapter = createAdapter({
+    jeepayClient: {
+      unifiedOrder: async (params) => {
+        calls.push(params);
+        return { payOrderId: 'P_3', payData: 'https://pay.example.com/wap' };
+      },
+    },
+  });
+
+  const result = await adapter.submitOrder({
+    pid: '10001',
+    out_trade_no: 'ORDER_3',
+    type: 'alipay',
+    device: 'mobile',
+    money: '6.66',
+    name: 'wap-test',
+    notify_url: 'https://merchant.example/notify',
+  });
+
+  assert.equal(result.code, 1);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].wayCode, 'ALI_WAP');
+  assert.deepEqual(JSON.parse(calls[0].channelExtra), { payDataType: 'form' });
+});
+
+test('maps explicit pc device to ALI_PC and requests form payDataType for submit flow', async () => {
+  const calls = [];
+  const adapter = createAdapter({
+    jeepayClient: {
+      unifiedOrder: async (params) => {
+        calls.push(params);
+        return { payOrderId: 'P_4', payData: 'https://pay.example.com/pc' };
+      },
+    },
+  });
+
+  const result = await adapter.submitOrder({
+    pid: '10001',
+    out_trade_no: 'ORDER_4',
+    type: 'alipay',
+    device: 'pc',
+    money: '9.99',
+    name: 'pc-test',
+    notify_url: 'https://merchant.example/notify',
+  });
+
+  assert.equal(result.code, 1);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].wayCode, 'ALI_PC');
+  assert.deepEqual(JSON.parse(calls[0].channelExtra), { payDataType: 'form' });
+});
+
+test('maps auth code payments to bar code wayCode and channelExtra authCode', async () => {
+  const calls = [];
+  const adapter = createAdapter({
+    jeepayClient: {
+      unifiedOrder: async (params) => {
+        calls.push(params);
+        return { payOrderId: 'P_5', payData: 'https://pay.example.com/bar' };
+      },
+    },
+  });
+
+  const result = await adapter.createOrder({
+    pid: '10001',
+    out_trade_no: 'ORDER_5',
+    type: 'alipay',
+    money: '8.00',
+    name: 'bar-test',
+    auth_code: '280812820366966512',
+    notify_url: 'https://merchant.example/notify',
+  });
+
+  assert.equal(result.code, 1);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].wayCode, 'ALI_BAR');
+  assert.deepEqual(JSON.parse(calls[0].channelExtra), { authCode: '280812820366966512' });
+});
+
+test('maps wxpay jsapi with openid to WX_JSAPI channelExtra', async () => {
+  const calls = [];
+  const adapter = createAdapter({
+    jeepayClient: {
+      unifiedOrder: async (params) => {
+        calls.push(params);
+        return { payOrderId: 'P_6', payData: 'https://pay.example.com/jsapi' };
+      },
+    },
+  });
+
+  const result = await adapter.createOrder({
+    pid: '10001',
+    out_trade_no: 'ORDER_6',
+    type: 'wxpay',
+    openid: 'o6BcIwvSiRpfS8e_UyfQNrYuk2LI',
+    money: '5.20',
+    name: 'wx-jsapi',
+    notify_url: 'https://merchant.example/notify',
+  });
+
+  assert.equal(result.code, 1);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].wayCode, 'WX_JSAPI');
+  assert.deepEqual(JSON.parse(calls[0].channelExtra), { openid: 'o6BcIwvSiRpfS8e_UyfQNrYuk2LI' });
+});
+
+test('maps alipay lite/jsapi with buyerUserId to ALI_JSAPI channelExtra', async () => {
+  const calls = [];
+  const adapter = createAdapter({
+    jeepayClient: {
+      unifiedOrder: async (params) => {
+        calls.push(params);
+        return { payOrderId: 'P_7', payData: 'https://pay.example.com/ali-jsapi' };
+      },
+    },
+  });
+
+  const result = await adapter.createOrder({
+    pid: '10001',
+    out_trade_no: 'ORDER_7',
+    type: 'alipay',
+    buyerUserId: '2088702585070844',
+    money: '7.77',
+    name: 'ali-jsapi',
+    notify_url: 'https://merchant.example/notify',
+  });
+
+  assert.equal(result.code, 1);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].wayCode, 'ALI_JSAPI');
+  assert.deepEqual(JSON.parse(calls[0].channelExtra), { buyerUserId: '2088702585070844' });
+});
