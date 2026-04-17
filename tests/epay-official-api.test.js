@@ -12,7 +12,7 @@ function createAdapter(overrides = {}) {
   });
 }
 
-test('maps generic alipay type to QR_CASHIER for unified order', async () => {
+test('maps generic alipay type to ALI_QR for unified order', async () => {
   const calls = [];
   const adapter = createAdapter({
     jeepayClient: {
@@ -34,8 +34,8 @@ test('maps generic alipay type to QR_CASHIER for unified order', async () => {
 
   assert.equal(result.code, 1);
   assert.equal(calls.length, 1);
-  assert.equal(calls[0].wayCode, 'QR_CASHIER');
-  assert.equal(calls[0].channelExtra, '');
+  assert.equal(calls[0].wayCode, 'ALI_QR');
+  assert.deepEqual(JSON.parse(calls[0].channelExtra), { payDataType: 'codeUrl' });
 });
 
 test('maps generic wxpay type to QR_CASHIER for unified order', async () => {
@@ -63,6 +63,37 @@ test('maps generic wxpay type to QR_CASHIER for unified order', async () => {
   assert.equal(calls[0].wayCode, 'QR_CASHIER');
 });
 
+test('passes wx mini-program entry options through QR_CASHIER channelExtra', async () => {
+  const calls = [];
+  const adapter = createAdapter({
+    jeepayClient: {
+      unifiedOrder: async (params) => {
+        calls.push(params);
+        return { payOrderId: 'P_2B', payData: 'https://pay.example.com/qrcode' };
+      },
+    },
+  });
+
+  const result = await adapter.createOrder({
+    pid: '10001',
+    out_trade_no: 'ORDER_2B',
+    type: 'wxpay',
+    money: '8.88',
+    name: 'test',
+    entry_lite_type: 'wxapp',
+    entry_page_type: 'lite',
+    notify_url: 'https://merchant.example/notify',
+  });
+
+  assert.equal(result.code, 1);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].wayCode, 'QR_CASHIER');
+  assert.deepEqual(JSON.parse(calls[0].channelExtra), {
+    entryLiteType: 'wxapp',
+    entryPageType: 'lite',
+  });
+});
+
 test('maps explicit frontend aliases to official Jeepay way codes', () => {
   const adapter = createAdapter();
 
@@ -87,7 +118,7 @@ test('maps official Jeepay way codes back to generic epay types', () => {
   assert.equal(adapter._mapWayCodeToEpayType('WX_LITE'), 'wxpay');
 });
 
-test('maps alipay mobile device to QR_CASHIER for submit flow', async () => {
+test('maps alipay mobile device to ALI_QR for submit flow', async () => {
   const calls = [];
   const adapter = createAdapter({
     jeepayClient: {
@@ -110,11 +141,11 @@ test('maps alipay mobile device to QR_CASHIER for submit flow', async () => {
 
   assert.equal(result.code, 1);
   assert.equal(calls.length, 1);
-  assert.equal(calls[0].wayCode, 'QR_CASHIER');
-  assert.equal(calls[0].channelExtra, '');
+  assert.equal(calls[0].wayCode, 'ALI_QR');
+  assert.deepEqual(JSON.parse(calls[0].channelExtra), { payDataType: 'codeUrl' });
 });
 
-test('maps generic pc browser flow to QR_CASHIER for submit flow', async () => {
+test('maps generic pc browser flow to ALI_QR for submit flow', async () => {
   const calls = [];
   const adapter = createAdapter({
     jeepayClient: {
@@ -137,8 +168,8 @@ test('maps generic pc browser flow to QR_CASHIER for submit flow', async () => {
 
   assert.equal(result.code, 1);
   assert.equal(calls.length, 1);
-  assert.equal(calls[0].wayCode, 'QR_CASHIER');
-  assert.equal(calls[0].channelExtra, '');
+  assert.equal(calls[0].wayCode, 'ALI_QR');
+  assert.deepEqual(JSON.parse(calls[0].channelExtra), { payDataType: 'codeUrl' });
 });
 
 test('maps auth code payments to bar code wayCode and channelExtra authCode', async () => {

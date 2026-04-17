@@ -113,6 +113,8 @@ class EpayAdapter {
     const openid = epayParams.openid || epayParams.openId || '';
     const buyerUserId = epayParams.buyerUserId || epayParams.buyer_user_id || '';
     const subAppId = epayParams.subAppId || epayParams.sub_app_id || '';
+    const entryLiteType = epayParams.entryLiteType || epayParams.entry_lite_type || '';
+    const entryPageType = epayParams.entryPageType || epayParams.entry_page_type || '';
     const payDataType = epayParams.payDataType || this._getPreferredPayDataType({ ...epayParams, type: wayCode });
 
     if (authCode && ['AUTO_BAR', 'ALI_BAR', 'WX_BAR', 'YSF_BAR'].includes(wayCode)) {
@@ -129,6 +131,14 @@ class EpayAdapter {
 
     if (subAppId && ['WX_JSAPI', 'WX_LITE', 'ALI_BAR', 'WX_BAR', 'YSF_BAR'].includes(wayCode)) {
       extras.subAppId = subAppId;
+    }
+
+    if (entryLiteType && wayCode === 'QR_CASHIER') {
+      extras.entryLiteType = entryLiteType;
+    }
+
+    if (entryPageType && wayCode === 'QR_CASHIER') {
+      extras.entryPageType = entryPageType;
     }
 
     if (payDataType && ['ALI_WAP', 'ALI_PC', 'ALI_QR', 'WX_NATIVE', 'QR_CASHIER'].includes(wayCode)) {
@@ -148,7 +158,7 @@ class EpayAdapter {
     if (type === 'alipay') {
       if (authCode) return 'ALI_BAR';
       if (buyerUserId) return device === 'lite' ? 'ALI_LITE' : 'ALI_JSAPI';
-      return 'QR_CASHIER';
+      return 'ALI_QR';
     }
 
     if (type === 'wxpay') {
