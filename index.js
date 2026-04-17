@@ -131,6 +131,46 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// 前台支付页轮询订单状态，用于支付完成后自动跳回 return_url
+app.get('/api/payment/status', async (req, res) => {
+  try {
+    const outTradeNo = String(req.query.out_trade_no || '').trim();
+    const tradeNo = String(req.query.trade_no || '').trim();
+
+    if (!outTradeNo && !tradeNo) {
+      return res.status(400).json({
+        paid: false,
+        status: 'invalid',
+        message: 'missing out_trade_no or trade_no',
+      });
+    }
+
+    const order = await jeepay.queryOrder({
+      mchOrderNo: outTradeNo,
+      payOrderId: tradeNo,
+    });
+
+    const state = String(order && order.state != null ? order.state : '');
+    return res.json({
+      paid: state === '2',
+      status: state,
+      trade_no: order && order.payOrderId ? order.payOrderId : '',
+      out_trade_no: order && order.mchOrderNo ? order.mchOrderNo : outTradeNo,
+    });
+  } catch (error) {
+    logger.warn('payment status query failed', {
+      message: error.message,
+      outTradeNo: req.query.out_trade_no || '',
+      tradeNo: req.query.trade_no || '',
+    });
+    return res.status(502).json({
+      paid: false,
+      status: 'error',
+      message: error.message || 'query failed',
+    });
+  }
+});
+
 app.get('/api/admin/notifications', requireAuth, async (req, res) => {
   const stats = await notificationService.getStats();
   const items = await notificationStore.list();

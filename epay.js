@@ -427,6 +427,9 @@ class EpayAdapter {
     }
 
     if (this._isQrImageUrl(payUrl)) {
+      const outTradeNo = encodeURIComponent(params.out_trade_no || '');
+      const returnUrl = params.return_url || '';
+      const statusUrl = `/api/payment/status?out_trade_no=${outTradeNo}`;
       return `<!DOCTYPE html>
 <html>
 <head>
@@ -464,15 +467,56 @@ class EpayAdapter {
       text-decoration: none;
       border-radius: 6px;
     }
+    .status {
+      margin-top: 14px;
+      color: #666;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h2>请使用微信扫码支付</h2>
-    <p>二维码已自动拉起，若未显示请刷新页面。</p>
+    <p>二维码已自动拉起，支付完成后会自动返回。</p>
     <img class="qr" src="${payUrl}" alt="微信支付二维码" />
     <div><a href="${payUrl}" class="link" target="_blank" rel="noopener noreferrer">打开二维码原图</a></div>
+    <div class="status" id="pay-status">正在等待支付完成...</div>
   </div>
+  <script>
+    (function () {
+      const statusUrl = ${JSON.stringify(statusUrl)};
+      const returnUrl = ${JSON.stringify(returnUrl)};
+      const statusNode = document.getElementById('pay-status');
+      let redirected = false;
+
+      async function pollStatus() {
+        if (redirected || !statusUrl) {
+          return;
+        }
+        try {
+          const response = await fetch(statusUrl, { credentials: 'same-origin', cache: 'no-store' });
+          const data = await response.json();
+          if (data && data.paid) {
+            redirected = true;
+            if (statusNode) {
+              statusNode.textContent = '支付成功，正在返回...';
+            }
+            if (returnUrl) {
+              window.location.href = returnUrl;
+              return;
+            }
+          }
+        } catch (_error) {
+          if (statusNode) {
+            statusNode.textContent = '支付状态检查中，完成后将自动返回。';
+          }
+        }
+      }
+
+      pollStatus();
+      setInterval(pollStatus, 3000);
+    })();
+  </script>
 </body>
 </html>`;
     }

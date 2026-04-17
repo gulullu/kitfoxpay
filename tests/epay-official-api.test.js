@@ -176,7 +176,7 @@ test('maps generic pc browser flow to ALI_QR for submit flow', async () => {
   assert.deepEqual(JSON.parse(calls[0].channelExtra), { payDataType: 'codeUrl' });
 });
 
-test('renders qr image page for wxpay submit flow when jeepay returns codeImgUrl png', async () => {
+test('renders qr image page for wxpay submit flow and redirects to return_url after success polling', async () => {
   const calls = [];
   const qrUrl = 'https://pay.jeepay.vip/api/scan/imgs/example.png';
   const adapter = createAdapter({
@@ -196,6 +196,7 @@ test('renders qr image page for wxpay submit flow when jeepay returns codeImgUrl
     money: '9.99',
     name: 'wx-qr-test',
     notify_url: 'https://merchant.example/notify',
+    return_url: 'https://merchant.example/return?order=ORDER_4B',
   });
 
   assert.equal(result.code, 1);
@@ -203,6 +204,9 @@ test('renders qr image page for wxpay submit flow when jeepay returns codeImgUrl
   assert.equal(calls[0].wayCode, 'QR_CASHIER');
   assert.match(result.data.form, /<img[^>]+src="https:\/\/pay\.jeepay\.vip\/api\/scan\/imgs\/example\.png"/);
   assert.doesNotMatch(result.data.form, /meta http-equiv="refresh"/i);
+  assert.match(result.data.form, /\/api\/payment\/status\?out_trade_no=ORDER_4B/);
+  assert.match(result.data.form, /https:\/\/merchant\.example\/return\?order=ORDER_4B/);
+  assert.match(result.data.form, /window\.location\.href/);
 });
 
 test('maps auth code payments to bar code wayCode and channelExtra authCode', async () => {
