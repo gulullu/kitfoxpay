@@ -61,6 +61,9 @@ test('maps generic wxpay type to QR_CASHIER for unified order', async () => {
   assert.equal(result.code, 1);
   assert.equal(calls.length, 1);
   assert.equal(calls[0].wayCode, 'QR_CASHIER');
+  assert.deepEqual(JSON.parse(calls[0].channelExtra), {
+    payDataType: 'codeImgUrl',
+  });
 });
 
 test('passes wx mini-program entry options through QR_CASHIER channelExtra', async () => {
@@ -91,6 +94,7 @@ test('passes wx mini-program entry options through QR_CASHIER channelExtra', asy
   assert.deepEqual(JSON.parse(calls[0].channelExtra), {
     entryLiteType: 'wxapp',
     entryPageType: 'lite',
+    payDataType: 'codeImgUrl',
   });
 });
 

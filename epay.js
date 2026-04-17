@@ -104,6 +104,10 @@ class EpayAdapter {
       return device === 'image' ? 'codeImgUrl' : 'codeUrl';
     }
 
+    if (wayCode === 'QR_CASHIER') {
+      return 'codeImgUrl';
+    }
+
     return '';
   }
 
