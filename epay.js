@@ -148,7 +148,7 @@ class EpayAdapter {
     if (type === 'alipay') {
       if (authCode) return 'ALI_BAR';
       if (buyerUserId) return device === 'lite' ? 'ALI_LITE' : 'ALI_JSAPI';
-      return 'ALI_QR';
+      return 'QR_CASHIER';
     }
 
     if (type === 'wxpay') {

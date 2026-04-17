@@ -12,7 +12,7 @@ function createAdapter(overrides = {}) {
   });
 }
 
-test('maps generic alipay type to ALI_QR for unified order', async () => {
+test('maps generic alipay type to QR_CASHIER for unified order', async () => {
   const calls = [];
   const adapter = createAdapter({
     jeepayClient: {
@@ -34,8 +34,8 @@ test('maps generic alipay type to ALI_QR for unified order', async () => {
 
   assert.equal(result.code, 1);
   assert.equal(calls.length, 1);
-  assert.equal(calls[0].wayCode, 'ALI_QR');
-  assert.deepEqual(JSON.parse(calls[0].channelExtra), { payDataType: 'codeUrl' });
+  assert.equal(calls[0].wayCode, 'QR_CASHIER');
+  assert.equal(calls[0].channelExtra, '');
 });
 
 test('maps generic wxpay type to QR_CASHIER for unified order', async () => {
@@ -87,7 +87,7 @@ test('maps official Jeepay way codes back to generic epay types', () => {
   assert.equal(adapter._mapWayCodeToEpayType('WX_LITE'), 'wxpay');
 });
 
-test('maps alipay mobile device to ALI_QR for submit flow', async () => {
+test('maps alipay mobile device to QR_CASHIER for submit flow', async () => {
   const calls = [];
   const adapter = createAdapter({
     jeepayClient: {
@@ -110,11 +110,11 @@ test('maps alipay mobile device to ALI_QR for submit flow', async () => {
 
   assert.equal(result.code, 1);
   assert.equal(calls.length, 1);
-  assert.equal(calls[0].wayCode, 'ALI_QR');
-  assert.deepEqual(JSON.parse(calls[0].channelExtra), { payDataType: 'codeUrl' });
+  assert.equal(calls[0].wayCode, 'QR_CASHIER');
+  assert.equal(calls[0].channelExtra, '');
 });
 
-test('maps generic pc browser flow to ALI_QR for submit flow', async () => {
+test('maps generic pc browser flow to QR_CASHIER for submit flow', async () => {
   const calls = [];
   const adapter = createAdapter({
     jeepayClient: {
@@ -137,8 +137,8 @@ test('maps generic pc browser flow to ALI_QR for submit flow', async () => {
 
   assert.equal(result.code, 1);
   assert.equal(calls.length, 1);
-  assert.equal(calls[0].wayCode, 'ALI_QR');
-  assert.deepEqual(JSON.parse(calls[0].channelExtra), { payDataType: 'codeUrl' });
+  assert.equal(calls[0].wayCode, 'QR_CASHIER');
+  assert.equal(calls[0].channelExtra, '');
 });
 
 test('maps auth code payments to bar code wayCode and channelExtra authCode', async () => {
