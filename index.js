@@ -1,16 +1,23 @@
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
-const querystring = require('querystring');
 const path = require('path');
 const session = require('express-session');
 const JeepayClient = require('./jeepay/jeepay');
 const EpayAdapter = require('./epay');
-const config = require('./config');
+const { loadConfig, getConfigPath, getExamplePath } = require('./lib/config-loader');
+const { FileNotificationStore } = require('./lib/notification-store');
+const { NotificationService } = require('./lib/notification-service');
+const { createHttpNotifyForwarder } = require('./lib/http-notify-forwarder');
+const {
+  createPaymentNotifyHandler,
+  createRefundNotifyHandler,
+} = require('./lib/webhook-handlers');
 const { router: jeepayRouter, initJeepayClient } = require('./jeepay');
-const { adminRouter, configRouter } = require('./admin');
+const { adminRouter, configRouter, requireAuth } = require('./admin');
 const testRouter = require('./test');
 
+const config = loadConfig();
 const app = express();
 const PORT = config.server.port;
 
@@ -54,6 +61,30 @@ initJeepayClient(jeepay);
 // 使用配置的网站域名作为服务器地址（用于通知URL）
 const serverHost = config.server.siteDomain;
 
+const logger = {
+  info(message, meta) {
+    console.log(`[kitfoxpay] ${message}`, meta || '');
+  },
+  warn(message, meta) {
+    console.warn(`[kitfoxpay] ${message}`, meta || '');
+  },
+  error(message, meta) {
+    console.error(`[kitfoxpay] ${message}`, meta || '');
+  },
+};
+
+const notificationStore = new FileNotificationStore({
+  filePath: path.join(__dirname, 'data', 'notifications.json'),
+});
+
+const notificationService = new NotificationService({
+  store: notificationStore,
+  forwarder: createHttpNotifyForwarder({
+    httpClient: axios,
+    timeoutMs: 10_000,
+  }),
+});
+
 // 初始化 易支付 适配器
 const epayAdapter = new EpayAdapter({
   jeepayClient: jeepay,
@@ -89,8 +120,26 @@ app.get('/api/health', (req, res) => {
       baseUrl: config.jeepay.baseUrl,
       mchNo: config.jeepay.mchNo,
       appId: config.jeepay.appId
+    },
+    runtime: {
+      configSource: require('node:fs').existsSync(getConfigPath()) ? getConfigPath() : getExamplePath(),
+      notificationStore: path.join(__dirname, 'data', 'notifications.json'),
     }
   });
+});
+
+app.get('/api/admin/notifications', requireAuth, async (req, res) => {
+  const stats = await notificationService.getStats();
+  const items = await notificationStore.list();
+  res.json({
+    stats,
+    items: items.slice(-50).reverse(),
+  });
+});
+
+app.post('/api/admin/notifications/retry', requireAuth, async (req, res) => {
+  const result = await notificationService.retryDueNotifications();
+  res.json({ success: true, ...result });
 });
 
 // ========== 注册配置管理 API 路由 ==========
@@ -245,155 +294,50 @@ app.all('/api.php', async (req, res) => {
  * POST /api/payment/notify
  * 接收 Jeepay 的支付通知，转换为 易支付 格式并转发到商户的 notify_url
  */
-app.post('/api/payment/notify', async (req, res) => {
-  try {
-    // 接收 Jeepay 格式的通知
-    const jeepayNotify = req.body;
-
-    // 验证 Jeepay 通知签名
-    if (!jeepay.verifyNotify(jeepayNotify)) {
-      console.error('Jeepay 支付通知签名验证失败:', jeepayNotify);
-      return res.send('fail');
-    }
-
-    console.log('收到 Jeepay 支付通知:', {
-      payOrderId: jeepayNotify.payOrderId,
-      mchOrderNo: jeepayNotify.mchOrderNo,
-      amount: jeepayNotify.amount,
-      state: jeepayNotify.state
-    });
-
-    // 转换为 易支付 格式的通知
-    const epayNotify = epayAdapter.handleNotify(jeepayNotify);
-
-    // 从扩展参数中获取商户的 notify_url
-    let notifyUrl = null;
-    if (jeepayNotify.extParam) {
-      try {
-        const extParamObj = JSON.parse(jeepayNotify.extParam);
-        notifyUrl = extParamObj.epay_notify_url || null;
-      } catch (e) {
-        // extParam 不是 JSON 格式，忽略
-        console.warn('extParam 解析失败:', e.message);
-      }
-    }
-
-    if (notifyUrl) {
-      // 转发通知到商户的 notify_url（使用 GET 方式）
-      try {
-        const forwardResponse = await axios.get(notifyUrl, {
-          params: epayNotify,
-          timeout: 10000 // 10秒超时
-        });
-
-        console.log('支付通知转发成功:', {
-          notifyUrl,
-          status: forwardResponse.status,
-          response: forwardResponse.data
-        });
-      } catch (forwardError) {
-        console.error('支付通知转发失败:', {
-          notifyUrl,
-          error: forwardError.message
-        });
-        // 转发失败不影响 Jeepay 通知的响应，但应该记录日志以便重试
-      }
-    } else {
-      console.log('未找到商户 notify_url，跳过通知转发');
-    }
-
-    // 必须返回 'success' 给 Jeepay
-    res.send('success');
-  } catch (error) {
-    console.error('处理支付通知失败:', error);
-    res.send('fail');
-  }
-});
+app.post('/api/payment/notify', createPaymentNotifyHandler({
+  jeepay,
+  epayAdapter,
+  notificationService,
+  logger,
+}));
 
 /**
  * Jeepay 退款结果异步通知接口
  * POST /api/refund/notify
  * 接收 Jeepay 的退款通知，转换为 易支付 格式并转发到商户的 notify_url
  */
-app.post('/api/refund/notify', async (req, res) => {
-  try {
-    // 接收 Jeepay 格式的退款通知
-    const jeepayRefundNotify = req.body;
-
-    // 验证 Jeepay 通知签名
-    if (!jeepay.verifyNotify(jeepayRefundNotify)) {
-      console.error('Jeepay 退款通知签名验证失败:', jeepayRefundNotify);
-      return res.send('fail');
-    }
-
-    console.log('收到 Jeepay 退款通知:', {
-      refundOrderId: jeepayRefundNotify.refundOrderId,
-      payOrderId: jeepayRefundNotify.payOrderId,
-      mchRefundNo: jeepayRefundNotify.mchRefundNo,
-      refundAmount: jeepayRefundNotify.refundAmount,
-      state: jeepayRefundNotify.state
-    });
-
-    // 转换为 易支付 格式的退款通知
-    const epayNotify = epayAdapter.handleRefundNotify(jeepayRefundNotify);
-
-    // 从扩展参数中获取商户的 notify_url
-    let notifyUrl = null;
-    if (jeepayRefundNotify.extParam) {
-      try {
-        const extParamObj = JSON.parse(jeepayRefundNotify.extParam);
-        notifyUrl = extParamObj.epay_notify_url || null;
-      } catch (e) {
-        // extParam 不是 JSON 格式，忽略
-        console.warn('extParam 解析失败:', e.message);
-      }
-    }
-
-    if (notifyUrl) {
-      // 转发通知到商户的 notify_url（使用 GET 方式）
-      try {
-        const forwardResponse = await axios.get(notifyUrl, {
-          params: epayNotify,
-          timeout: 10000 // 10秒超时
-        });
-
-        console.log('退款通知转发成功:', {
-          notifyUrl,
-          status: forwardResponse.status,
-          response: forwardResponse.data
-        });
-      } catch (forwardError) {
-        console.error('退款通知转发失败:', {
-          notifyUrl,
-          error: forwardError.message
-        });
-        // 转发失败不影响 Jeepay 通知的响应，但应该记录日志以便重试
-      }
-    } else {
-      console.log('未找到商户 notify_url，跳过通知转发');
-    }
-
-    // 必须返回 'success' 给 Jeepay
-    res.send('success');
-  } catch (error) {
-    console.error('处理退款通知失败:', error);
-    res.send('fail');
-  }
-});
+app.post('/api/refund/notify', createRefundNotifyHandler({
+  jeepay,
+  epayAdapter,
+  notificationService,
+  logger,
+}));
 
 // ========== 启动服务器 ==========
-app.listen(PORT, config.server.host, () => {
-  console.log(`=================================`);
-  console.log(`支付平台 API 服务已启动`);
-  console.log(`绑定地址: ${config.server.host}:${PORT}`);
-  console.log(`服务地址: ${serverHost}`);
-  console.log(`配置信息:`);
-  console.log(`Jeepay:`);
-  console.log(`  - Base URL: ${config.jeepay.baseUrl}`);
-  console.log(`  - 商户号: ${config.jeepay.mchNo}`);
-  console.log(`  - 应用ID: ${config.jeepay.appId}`);
-  console.log(`易支付:`);
-  console.log(`  - 商户ID: ${config.epay.pid}`);
-  console.log(`网站域名: ${config.server.siteDomain}`);
-  console.log(`=================================`);
+async function start() {
+  await notificationStore.init();
+  notificationService.start();
+
+  app.listen(PORT, config.server.host, () => {
+    console.log(`=================================`);
+    console.log(`支付平台 API 服务已启动`);
+    console.log(`绑定地址: ${config.server.host}:${PORT}`);
+    console.log(`服务地址: ${serverHost}`);
+    console.log(`配置来源: ${require('node:fs').existsSync(getConfigPath()) ? getConfigPath() : getExamplePath()}`);
+    console.log(`通知存储: ${path.join(__dirname, 'data', 'notifications.json')}`);
+    console.log(`配置信息:`);
+    console.log(`Jeepay:`);
+    console.log(`  - Base URL: ${config.jeepay.baseUrl}`);
+    console.log(`  - 商户号: ${config.jeepay.mchNo}`);
+    console.log(`  - 应用ID: ${config.jeepay.appId}`);
+    console.log(`易支付:`);
+    console.log(`  - 商户ID: ${config.epay.pid}`);
+    console.log(`网站域名: ${config.server.siteDomain}`);
+    console.log(`=================================`);
+  });
+}
+
+start().catch((error) => {
+  console.error('启动失败:', error);
+  process.exit(1);
 });

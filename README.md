@@ -54,6 +54,8 @@ npm install
 
 #### 3. 配置参数
 
+说明：当前版本在 `config.js` 缺失时会自动回退读取 `config.example.js`，这样服务可以先启动、先进入管理界面；但真正接生产前，仍建议保存正式 `config.js`。
+
 **首先，在 Jeepay 后台获取配置信息：**
 - 商户号（mchNo）
 - 应用ID（appId）
@@ -98,7 +100,24 @@ module.exports = {
 npm start
 ```
 
+#### 5. 运行测试
+
+```bash
+npm test
+```
+
 服务启动后，访问 `http://localhost:9219` 进入管理界面。界面展示请参考下方"界面展示"部分。
+
+### 可靠通知说明（当前增强版）
+
+- Jeepay 支付/退款回调会先落本地持久化，再异步转发给下游商户 `notify_url`
+- 重复通知按事件键去重，不会重复转发已成功的记录
+- 转发失败会进入重试队列，而不是直接丢失
+- 本地持久化文件默认路径：`data/notifications.json`
+- 最小运维接口：
+  - `GET /api/health`
+  - `GET /api/admin/notifications`
+  - `POST /api/admin/notifications/retry`
 
 ### 在 NewAPI 中配置
 

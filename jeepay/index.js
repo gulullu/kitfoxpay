@@ -1,6 +1,6 @@
 const express = require('express');
 const JeepayClient = require('./jeepay');
-const config = require('../config');
+const { loadConfig } = require('../lib/config-loader');
 
 const router = express.Router();
 
@@ -11,7 +11,7 @@ const router = express.Router();
  */
 function getServerUrl(path = '') {
   // 使用配置的网站域名，不再使用拼接方式
-  const siteDomain = config.server?.siteDomain || 'http://localhost:9219';
+  const siteDomain = loadConfig().server?.siteDomain || 'http://localhost:9219';
   // 确保 path 以 / 开头
   const normalizedPath = path.startsWith('/') ? path : '/' + path;
   return `${siteDomain}${normalizedPath}`;

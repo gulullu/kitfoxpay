@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const os = require('os');
+const { loadConfig, getConfigPath } = require('./lib/config-loader');
 
 const router = express.Router();
 const configRouter = express.Router();
@@ -18,9 +19,7 @@ function hashPassword(password) {
  * 认证中间件：检查用户是否已登录
  */
 function requireAuth(req, res, next) {
-  // 重新加载配置以获取最新密码
-  delete require.cache[require.resolve('./config')];
-  const currentConfig = require('./config');
+  const currentConfig = loadConfig();
   
   if (req.session && req.session.authenticated) {
     // 验证 session 中的密码是否仍然有效
@@ -55,9 +54,7 @@ router.post('/login', (req, res) => {
       });
     }
 
-    // 重新加载配置以获取最新密码
-    delete require.cache[require.resolve('./config')];
-    const currentConfig = require('./config');
+    const currentConfig = loadConfig();
     
     if (password === currentConfig.admin.password) {
       req.session.authenticated = true;
@@ -105,9 +102,7 @@ router.post('/logout', (req, res) => {
  * GET /api/admin/status
  */
 router.get('/status', (req, res) => {
-  // 重新加载配置以获取最新密码
-  delete require.cache[require.resolve('./config')];
-  const currentConfig = require('./config');
+  const currentConfig = loadConfig();
   
   if (req.session && req.session.authenticated) {
     // 验证 session 中的密码是否仍然有效
@@ -133,9 +128,7 @@ router.get('/status', (req, res) => {
  */
 configRouter.get('/', requireAuth, (req, res) => {
   try {
-    // 重新加载配置文件以获取最新内容
-    delete require.cache[require.resolve('./config')];
-    const currentConfig = require('./config');
+    const currentConfig = loadConfig();
     
     res.json({
       baseUrl: currentConfig.baseUrl,
@@ -210,8 +203,7 @@ configRouter.put('/', requireAuth, (req, res) => {
     };
 
     // 获取当前配置以保留 admin.password（如果新配置中没有提供）
-    delete require.cache[require.resolve('./config')];
-    const currentConfig = require('./config');
+    const currentConfig = loadConfig();
     const adminPassword = newConfig.admin?.password || currentConfig.admin?.password || 'admin123';
 
     // 构建配置文件内容
@@ -273,8 +265,7 @@ module.exports = {
 `;
 
     // 写入配置文件
-    const configPath = path.join(__dirname, 'config.js');
-    fs.writeFileSync(configPath, configContent, 'utf8');
+    fs.writeFileSync(getConfigPath(), configContent, 'utf8');
 
     res.json({ 
       success: true, 

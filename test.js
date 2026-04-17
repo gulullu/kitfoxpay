@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const https = require('https');
 const { URL } = require('url');
+const { loadConfig } = require('./lib/config-loader');
 
 const router = express.Router();
 
@@ -160,8 +161,7 @@ function getServerBaseUrl(req) {
   
   if (!host) {
     // 从配置中获取服务器地址
-    delete require.cache[require.resolve('./config')];
-    const config = require('./config');
+    const config = loadConfig();
     if (config.server && config.server.host && config.server.port) {
       // 如果配置的是 0.0.0.0，使用 localhost
       if (config.server.host === '0.0.0.0') {
@@ -296,8 +296,7 @@ router.post('/jeepay/query-order', requireAuth, async (req, res) => {
 router.post('/epay/create-order', requireAuth, async (req, res) => {
   try {
     // 获取配置以生成签名
-    delete require.cache[require.resolve('./config')];
-    const config = require('./config');
+    const config = loadConfig();
     
     if (!config.epay || !config.epay.key) {
       return res.status(400).json({
@@ -369,8 +368,7 @@ router.post('/epay/create-order', requireAuth, async (req, res) => {
 router.post('/epay/submit-order', requireAuth, async (req, res) => {
   try {
     // 获取配置以生成签名
-    delete require.cache[require.resolve('./config')];
-    const config = require('./config');
+    const config = loadConfig();
     
     if (!config.epay || !config.epay.key) {
       return res.status(400).json({
@@ -480,8 +478,7 @@ router.post('/epay/submit-order', requireAuth, async (req, res) => {
 router.post('/epay/query-order', requireAuth, async (req, res) => {
   try {
     // 获取配置以生成签名
-    delete require.cache[require.resolve('./config')];
-    const config = require('./config');
+    const config = loadConfig();
     
     if (!config.epay || !config.epay.key) {
       return res.status(400).json({
@@ -548,8 +545,7 @@ router.post('/epay/query-order', requireAuth, async (req, res) => {
 router.post('/epay/refund', requireAuth, async (req, res) => {
   try {
     // 获取配置以生成签名
-    delete require.cache[require.resolve('./config')];
-    const config = require('./config');
+    const config = loadConfig();
     
     if (!config.epay || !config.epay.key) {
       return res.status(400).json({

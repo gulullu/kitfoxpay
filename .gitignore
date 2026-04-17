@@ -11,6 +11,9 @@ yarn.lock
 # 配置文件（包含敏感信息）
 config.js
 
+# 运行时状态
+/data/
+
 # 日志
 logs/
 *.log
